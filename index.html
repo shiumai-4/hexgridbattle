@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ヘックスグリッドバトル</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {font-family: 'Arial', sans-serif;margin: 0;padding: 0;background-color: #111827;color: #f9fafb;display: flex;justify-content: center;align-items: center;min-height: 100vh;background-size: cover;background-position: center;flex-direction: column;}
+        #game-container {display: flex;flex-direction: row;align-items: flex-start;padding: 1.25rem;max-width: 90%;width: 100%;box-sizing: border-box;}
+        #board-container {display: flex;flex-direction: column;align-items: center;margin-bottom: 0.75rem;width: 100%;max-width: 600px;margin-right: 2rem;}
+        .row {display: flex;justify-content: center;margin-bottom: 0.25rem;width: 100%;}
+        .hex-cell {width: 56px;height: 64px;display: flex;justify-content: center;align-items: center;margin: 0 0.25rem;border-radius: 0.5rem;font-size: 0.75rem;position: relative;animation: new-ally-fade-in 0.3s ease-out forwards;}
+        .hex-inner {width: 100%;height: 100%;background-color: #4b5563;border-radius: 0.5rem;display: flex;justify-content: center;align-items: center;position: absolute;top: 0;left: 0;border: 2px solid;border-color: #6b7280;}
+        .hex-здоров {background-color: #86ef7d;}
+        .hex-ослаблен {background-color: #f43f5e;}
+        .enemy-здоров {color: #ffffff;}
+        .enemy-ослаблен {color: #ffffff;}
+        .slot-number {position: absolute;top: 0.15rem;left: 0.25rem;font-size: 0.5rem;color: #cbd5e0;z-index: 10;}
+        #message-box {background-color: #17233c;color: #f9fafb;padding: 0.5rem;margin-bottom: 0.75rem;border-radius: 0.5rem;text-align: center;width: 100%;max-width: 600px;border: 2px solid;border-color: #6b7280;}
+        .message-box-clear { background-color: #ffe35a !important; color: #062b08 !important; border-color: #fbaf21 !important; }
+        .message-box-gameover { background-color: #aa2ac0 !important; color: #f3ffae !important; border-color: #f398ff !important; }
+        #right-container {display: flex;flex-direction: column;align-items: center;margin-left: 2rem;}
+        #card-description {background-color: #101520;color: #f9fafb;height: 4.0rem;padding: 0.5rem;margin-bottom: 2.5rem;border-radius: 0.5rem;text-align: center;width: 100%;max-width: 400px;border: 2px solid;border-color: #6b7280;white-space: pre-line;}
+        #hand-container {display: flex;justify-content: center;margin-bottom: 0.95rem;width: 100%;max-width: 600px;}
+        .card {width: 64px;height: 80px;display: flex;justify-content: center;align-items: center;margin: 0 0.5rem;cursor: pointer;border-radius: 0.5rem;box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0.2);transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;font-size: 1rem;background-color: #374151;color: #f9fafb;border: 2px solid;border-color: #4b5563;}
+        .card:hover {transform: scale(1.2);box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0.3);}
+        .card.selected {background-color: #6b7280;border-color: #f5f5f5;box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0.4);}
+        .card.disabled {opacity: 0.5;cursor: not-allowed;}
+        #top-right-ui {display: flex;flex-direction: row;align-items: center;justify-content: center;margin-bottom: 0.75rem;width: 100%;max-width: 400px;}
+        #special-hand-container {display: flex;justify-content: center;align-items: center;margin-left: 0.5rem;margin-bottom: 0.75rem;}
+        .special-card {width: 64px;height: 90px;display: flex;justify-content: center;align-items: center;margin: 0 0.5rem;cursor: pointer;border-radius: 0.5rem;box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.2);transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;font-size: 1rem;background-color: #6b46c1;color: #f9fafb;border: 2px solid;border-color: #4b5563;}
+        .special-card:hover {transform: scale(1.2);box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.3);}
+        .special-card.selected {background-color: #7763b1;border-color: #f5f5f5;box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.4);}
+        .special-card.disabled {opacity: 0.5;cursor: not-allowed;}
+        #kill-count {background-color: #101520;color: #f9fafb;padding: 0.5rem;border-radius: 0.5rem;text-align: center;margin-right: 0.5rem;margin-left: 0.2rem;margin-bottom: 0.75rem;width: 100%;max-width: 400px;border: 2px solid;border-color: #6b7280;white-space: pre-line;}
+        .hp-bar {width: 80%;height: 0.5rem;background-color: #6b7280;border-radius: 0.25rem;margin-top: 0.25rem;position: absolute;bottom: 0.25rem;left: 10%;}
+        .hp-fill {height: 100%;background-color: #86ef7d;border-radius: 0.25rem;width: 100%;}
+        .hp-text {position: absolute;top: -0.6rem;right: 0.04rem;font-size: 0.7rem;color: #333;z-index: 1;}
+        .damage-text {font-size: 0.9rem; }
+        #game-explanation { height: 5.5em; overflow-y: auto; border: 2px solid #6b7280; background-color: #201c10; color: #f9fafb; padding: 0.5rem; border-radius: 0.5rem;  white-space: pre-line; text-align: left; margin-bottom: 0.75rem; max-width: 400px; width: 100%; box-sizing: border-box;}
+        @keyframes new-ally-fade-in { 0% { opacity: 0.5; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1); } }
+        .disabled-overlay { opacity: 0.5; pointer-events: none; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-50">
+    <div id="game-container" class="flex flex-row items-start">
+        <div id="left-container">
+            <div id="board-container" class="flex flex-col items-center mb-3">
+                <div class="row">
+                    <div class="hex-cell" data-slot-index="0"><span class="slot-number">1</span><div class="hex-inner"></div></div>
+                    <div class="hex-cell" data-slot-index="1"><span class="slot-number">2</span><div class="hex-inner"></div></div>
+                    <div class="hex-cell" data-slot-index="2"><span class="slot-number">3</span><div class="hex-inner"></div></div>
+                </div>
+                <div class="row">
+                    <div class="hex-cell" data-slot-index="3"><span class="slot-number">4</span><div class="hex-inner"></div></div>
+                    <div class="hex-cell" data-slot-index="4"><span class="slot-number">5</span><div class="hex-inner"></div></div>
+                    <div class="hex-cell" data-slot-index="5"><span class="slot-number">6</span><div class="hex-inner"></div></div>
+                    <div class="hex-cell" data-slot-index="6"><span class="slot-number">7</span><div class="hex-inner"></div></div>
+                </div>
+                <div class="row">
+                    <div class="hex-cell" data-slot-index="7"><span class="slot-number">8</span><div class="hex-inner"></div></div>
+                    <div class="hex-cell" data-slot-index="8"><span class="slot-number">9</span><div class="hex-inner"></div></div>
+                    <div class="hex-cell" data-slot-index="9"><span class="slot-number">10</span><div class="hex-inner"></div></div>
+                    <div class="hex-cell" data-slot-index="10"><span class="slot-number">11</span><div class="hex-inner"></div></div>
+                    <div class="hex-cell" data-slot-index="11"><span class="slot-number">12</span><div class="hex-inner"></div></div>
+                </div>
+                <div class="row">
+                    <div class="hex-cell" data-slot-index="12"><span class="slot-number">13</span><div class="hex-inner"></div></div>
+                    <div class="hex-cell" data-slot-index="13"><span class="slot-number">14</span><div class="hex-inner"></div></div>
+                    <div class="hex-cell" data-slot-index="14"><span class="slot-number">15</span><div class="hex-inner"></div></div>
+                    <div class="hex-cell" data-slot-index="15"><span class="slot-number">16</span><div class="hex-inner"></div></div>
+                </div>
+                <div class="row">
+                    <div class="hex-cell" data-slot-index="16"><span class="slot-number">17</span><div class="hex-inner"></div></div>
+                    <div class="hex-cell" data-slot-index="17"><span class="slot-number">18</span><div class="hex-inner"></div></div>
+                    <div class="hex-cell" data-slot-index="18"><span class="slot-number">19</span><div class="hex-inner"></div></div>
+                </div>
+            </div>
+            <div id="message-box" class="mb-3 text-center"></div>
+        </div>
+        <div id="right-container">
+            <div id="top-right-ui" class="flex flex-row justify-center mb-3">
+                <div id="kill-count" class="text-center mr-2">倒した敵の数: 0/250<br>Lv: 1<br>Exp: 0/50</div>
+                <div id="special-hand-container" class="flex justify-center">
+                    <div class="special-card" data-special-card-index="0"></div>
+                    <div class="special-card" data-special-card-index="1"></div>
+                </div>
+            </div>
+            <div id="hand-container" class="flex justify-center mb-3">
+                <div class="card" data-card-index="0"></div>
+                <div class="card" data-card-index="1"></div>
+                <div class="card" data-card-index="2"></div>
+                <div class="card" data-card-index="3"></div>
+                <div class="card" data-card-index="4"></div>
+            </div>
+            <div id="card-description" class="mb-3 text-center"></div>
+            <div id="game-explanation" class="mb-3 text-left overflow-y-auto">
+            </div>
+        </div>
+    </div>
+    <script>
+        // ゲーム設定
+        const gameSettings = {
+            initialHandSize: 5,
+            boardSize: 19,
+            cardTypes: ['⚡️', '🗡️', '💥'],
+            enemyTypes: ['🔥', '💧', '☀️', '🌱', '👿'],
+            enemyHpValues: {'🔥': 15,'💧': 8,'☀️': 15,'🌱': 20,'👿': 150},
+            slotCoordinates: [
+                [0, 0], [1, 0], [2, 0],
+                [0.5, 1], [1.5, 1], [2.5, 1], [3.5, 1],
+                [0, 2], [1, 2], [2, 2], [3, 2], [4, 2],
+                [0.5, 3], [1.5, 3], [2.5, 3], [3.5, 3],
+                [1, 4], [2, 4], [3, 4]
+            ],
+            adjacentSlots: [
+                [1, 3, 4], [0, 2, 4, 5], [1, 5, 6],
+                [0, 4, 7, 8], [0, 1, 3, 5, 8, 9], [1, 2, 4, 6, 9, 10], [2, 5, 10, 11],
+                [3, 8, 12], [3, 4, 7, 9, 12, 13], [4, 5, 8, 10, 13, 14], [5, 6, 9, 11, 14, 15], [6, 10, 15],
+                [7, 8, 13, 16], [8, 9, 12, 14, 16, 17], [9, 10, 13, 15, 17, 18], [10, 11, 14, 18],
+                [12, 13, 17], [13, 14, 16, 18], [14, 15, 17]
+            ],
+            killTarget: 250,
+            killsPerLevel: 5,
+            levelUpThreshold: 50,
+            enemySpawnRatesInitial: [0.3, 0.6, 0, 0.1 ,0],
+            midGameRatesCount: 35,
+            enemySpawnRatesMidGame: [0.35, 0.35, 0, 0.30, 0],
+            finalGameRatesCount: 125,
+            enemySpawnRatesFinalGame: [0.25, 0.25, 0.25, 0.25, 0],
+            bossThresholdInitial: 50,
+            bossThresholdIncrement: 30,
+            chainDamageMultiplier: 0.8,
+            splashDamageMultiplier: 2,
+            experiencePerKill: 10,
+            experienceChainBonus: 4,
+            cardDescriptions: {
+                '⚡️': '⚡️：電撃。隣接する同じ種類の敵に連鎖ダメージ。',
+                '🗡️': '🗡️：斬撃。敵の最大HPの1/5の追加ダメージ。',
+                '💥': '💥：爆発。周囲の敵の数に応じて分散ダメージ。'
+            },
+            baseDamage: {
+                '⚡️': 10,
+                '🗡️': 15,
+                '💥': 10
+            },
+            specialCardTypes: ['💀', '🦠', '🌊'],
+            specialCardDescriptions: {
+                '💀': '💀：呪縛。全ての同じ種類の敵に呪縛ダメージ。',
+                '🦠': '🦠：感染。隣接する敵を同化させ感染ダメージ。',
+                '🌊': '🌊：津波。全ての敵に津波ダメージ。'
+            },
+            specialCardBaseDamage: {
+                '💀': 20,
+                '🦠': 2,
+                '🌊': 10
+            }
+        };
+
+        // ゲームの状態
+        const gameState = {
+            hand: [],
+            board: [],
+            selectedCardIndex: null,
+            selectedSpecialCardIndex: null,
+            killCount: 0,
+            gameOver: false,
+            handSelectionEnabled: true,
+            playerLevel: 1,
+            playerXp: 0,
+            expAdded: 0,
+            levelUpThreshold: gameSettings.levelUpThreshold,
+            enemySpawnRates: [...gameSettings.enemySpawnRatesInitial],
+            isMidGameRatesActive: false,
+            isFinalGameRatesActive: false,
+            forcePurpleEnemy: false,
+            forcePurpleEnemyCount: gameSettings.bossThresholdInitial,
+            forcePurpleEnemyThreshold: gameSettings.bossThresholdIncrement,
+            bossExtraHpTimes: 0,
+            turn: 1,
+            specialHand: [null, null],
+            specialCardChargeCounter: 0,
+            specialCardChargeThreshold: 300,
+            emptySlotsPreviousTurn: [],
+            emptySlotsCurrentTurn: []
+        };
+
+        // DOM要素のキャッシュ
+        const domElements = {
+            handContainer: document.getElementById('hand-container'),
+            specialHandContainer: document.getElementById('special-hand-container'),
+            boardContainer: document.getElementById('board-container'),
+            messageBox: document.getElementById('message-box'),
+            killCountDisplay: document.getElementById('kill-count'),
+            cardDescription: document.getElementById('card-description'),
+            gameExplanation: document.getElementById('game-explanation'),
+            handSlots: null,
+            boardSlots: null,
+            specialHandSlots: null,
+        };
+
+        // ゲームの説明文
+        const explanationText = `【ヘックスグリッドバトル】
+
+**目標**
+　敵を合計${gameSettings.killTarget}体倒すとゲームクリアです！
+
+**ゲームの基本的な流れ**
+1.  **ターン開始**: 前のターンに空になったマスに敵が補充されます。
+2.  **カード選択**: 手札から攻撃に使いたいカードを1枚選びます。
+3.  **攻撃対象選択**: ボード上の敵がいるマスをクリックして攻撃します。
+4.  **攻撃実行**: 選んだカードの効果で敵にダメージを与えます。敵のHPが0になると倒されます。
+5.  **カード補充と成長**: 敵を倒すと新しいカードが手札に補充されます。
+　　倒した敵の数に応じて経験値が得られ、経験値が${gameSettings.levelUpThreshold}ごとにプレイヤーのレベルと攻撃力が上がります。
+　　敵を同時に倒すと経験値ボーナス！
+
+**カードの種類と効果**
+* **通常カード**:
+    * ⚡️ (電撃)：隣接する同じ種類の敵に連鎖ダメージを与えます。
+    * 🗡️ (斬撃)：敵の最大HPの1/5の追加ダメージを与えます。
+    * 💥 (爆発)：周囲の敵の数に応じて分散ダメージを与えます。
+* **スペシャルカード**: 経験値を獲得することでチャージされ、手札に追加されます。
+    * 💀 (呪縛)：全ての同じ種類の敵に呪縛ダメージを与えます。
+    * 🦠 (感染)：隣接する敵を同じ種類に変化させ感染ダメージを与えます。
+    * 🌊 (津波)：全ての敵に津波ダメージを与えます。
+
+**敵について**
+　敵には🔥、💧、☀️、🌱、👿の5種類がいます。
+　敵は倒すごとに強くなって補充されます。
+　特定の討伐数に達すると、より強力なボス敵（👿）が強制的に出現することがあります。
+
+**ゲームオーバー**
+　手札が全てなくなると、ゲームオーバーとなります。
+`;
+
+        // 初期化
+        function initializeGame() {
+            gameState.hand = [];
+            gameState.board = [];
+            gameState.selectedCardIndex = null;
+            gameState.selectedSpecialCardIndex = null;
+            gameState.killCount = 0;
+            gameState.gameOver = false;
+            gameState.handSelectionEnabled = true;
+            gameState.playerLevel = 1;
+            gameState.playerXp = 0;
+            gameState.expAdded = 0;
+            gameState.levelUpThreshold = gameSettings.levelUpThreshold;
+            gameState.enemySpawnRates = [...gameSettings.enemySpawnRatesInitial];
+            gameState.isMidGameRatesActive = false;
+            gameState.isFinalGameRatesActive = false;
+            gameState.forcePurpleEnemy = false;
+            gameState.forcePurpleEnemyCount = gameSettings.bossThresholdInitial;
+            gameState.bossExtraHpTimes = 0;
+            gameState.emptySlotsPreviousTurn = [];
+            gameState.emptySlotsCurrentTurn = [];
+
+            domElements.gameExplanation.textContent = explanationText;
+            updateMessageBoxUI('ゲーム開始');
+            updateKillCountUI();
+
+            for (let i = 0; i < gameSettings.initialHandSize; i++) {
+                drawCard();
+            }
+
+            for (let i = 0; i < gameSettings.boardSize; i++) {
+                spawnEnemy(i);
+            }
+
+            domElements.handSlots = document.querySelectorAll('#hand-container .card');
+            domElements.boardSlots = document.querySelectorAll('#board-container .hex-cell');
+            domElements.specialHandSlots = document.querySelectorAll('#special-hand-container .special-card');
+            
+
+            // イベントリスナーの設定
+            domElements.handContainer.addEventListener('click', handleHandClick);
+            domElements.boardContainer.addEventListener('click', handleBoardClick);
+            domElements.specialHandContainer.addEventListener('click', handleSpecialHandClick);
+
+            // ゲーム開始時の敵補充 (前のターンは存在しないので空)
+            replenishEnemies();
+
+            updateHandUI();
+            updateSpecialHandUI();
+            updateBoardUI();
+            updateMessageBoxUI('手札を選択してください');
+
+            // 初期状態の空セルを記録 (次のターンのために)
+            recordCurrentEmptySlots();
+        }
+
+        // 敵を補充する関数
+        function replenishEnemies() {
+            gameState.emptySlotsPreviousTurn.forEach(emptySlotIndex => {
+                if (!gameState.board[emptySlotIndex] || gameState.board[emptySlotIndex].empty) {
+                    spawnEnemy(emptySlotIndex);
+                }
+            });
+            gameState.emptySlotsPreviousTurn = []; // リセット
+            updateBoardUI();
+        }
+
+        // 現在の空セルを記録する関数
+        function recordCurrentEmptySlots() {
+            gameState.emptySlotsCurrentTurn = gameState.board.reduce((acc, cell, index) => {
+                if (!cell || cell.empty) {
+                    acc.push(index);
+                }
+                return acc;
+            }, []);
+        }
+
+        // カードを引く
+        function drawCard() {
+            if (gameState.hand.length < 5) {
+                const randomCardType = gameSettings.cardTypes[Math.floor(Math.random() * gameSettings.cardTypes.length)];
+                gameState.hand.push(randomCardType);
+            }
+        }
+
+        // 敵を生成する
+        function spawnEnemy(slotIndex) {
+            const enemyType = generateEnemyType();
+
+            if (generateEnemyType != '👿'){
+                gameState.bossExtraHpTimes = 0;
+            } else {
+                gameState.bossExtraHpTimes = 1;
+            }
+            const newHp = gameSettings.enemyHpValues[enemyType] + Math.floor(gameState.killCount / 5) * 3 + gameState.playerLevel * gameState.bossExtraHpTimes;
+            gameState.board[slotIndex] = {
+                enemy: {
+                    type: enemyType,
+                    hp: newHp,
+                    maxHp: newHp
+                },
+                empty: false
+            };
+        }
+
+        // 手札のクリック処理
+        function handleHandClick(event) {
+            if (!gameState.handSelectionEnabled || gameState.gameOver) return;
+            const cardElement = event.target.closest('.card');
+            if (cardElement) {
+                const cardIndex = parseInt(cardElement.dataset.cardIndex);
+                if (gameState.hand[cardIndex] !== undefined) {
+                    selectCard(cardIndex);
+                }
+            }
+        }
+
+        // ボードのクリック処理
+        function handleBoardClick(event) {
+            if (gameState.selectedCardIndex === null && gameState.selectedSpecialCardIndex === null || gameState.gameOver) return;
+            const hexCell = event.target.closest('.hex-cell');
+            if (hexCell) {
+                const slotIndex = parseInt(hexCell.dataset.slotIndex);
+                attack(slotIndex);
+            }
+        }
+
+        // 特別な手札のクリック処理
+        function handleSpecialHandClick(event) {
+            if (gameState.gameOver) return;
+            const cardElement = event.target.closest('.special-card');
+            if (cardElement) {
+                const cardIndex = parseInt(cardElement.dataset.specialCardIndex);
+                if (gameState.specialHand[cardIndex]) {
+                    selectCard(cardIndex + 5); // 通常の手札選択と同じ関数を使用
+                }
+            }
+        }
+
+        function updateHandUI() {
+            domElements.handContainer.innerHTML = '';
+            for (let i = 0; i < 5; i++) {
+                const card = document.createElement('div');
+                card.classList.add('card');
+                card.dataset.cardIndex = i;
+
+                if (gameState.hand[i] !== undefined) { // gameState.hand[i] が存在するか確認
+                    card.textContent = gameState.hand[i];
+                    if (gameState.handSelectionEnabled) {
+                        card.classList.add('cursor-pointer');
+                        card.classList.remove('opacity-50', 'cursor-not-allowed');
+                        card.addEventListener('click', handleCardClick); // イベントリスナーを個々のカードに設定
+                    } else {
+                        card.classList.add('opacity-50', 'cursor-not-allowed', 'cursor-default');
+                        card.removeEventListener('click', handleCardClick);
+                    }
+                    if (gameState.selectedCardIndex === i) {
+                        card.classList.add('selected');
+                    }
+                } else {
+                    card.classList.add('opacity-30', 'cursor-not-allowed');
+                    card.textContent = '';
+                }
+                domElements.handContainer.appendChild(card);
+            }
+            domElements.handSlots = document.querySelectorAll('#hand-container .card');
+            updateCardDescriptionUI();
+        }
+
+        // 個々のカードにイベントリスナーを設定するためのヘルパー関数
+        function handleCardClick(event) {
+            if (!gameState.handSelectionEnabled || gameState.gameOver) return;
+            const cardElement = event.target.closest('.card');
+            if (cardElement && !cardElement.classList.contains('opacity-30')) {
+                const cardIndex = parseInt(cardElement.dataset.cardIndex);
+                // ここで gameState.hand[cardIndex] が存在するかどうかを確認
+                if (gameState.hand[cardIndex] !== undefined) {
+                    selectCard(cardIndex);
+                }
+                // 有効なカードでなければ、何もしない
+            }
+        }
+
+        function updateSpecialHandUI() {
+            // 新しいspecialHandSlotsを取得し直す
+            domElements.specialHandSlots = document.querySelectorAll('#special-hand-container .special-card');
+
+            // 常に2つのスロットを処理
+            for (let i = 0; i < 2; i++) {
+                const card = domElements.specialHandSlots[i]; // HTMLで定義済みのスロットを取得
+                card.classList.remove('selected', 'opacity-30', 'cursor-not-allowed', 'cursor-pointer'); // クラスをリセット
+
+                if (gameState.specialHand[i]) { // gameState.specialHand[i] がnullでないか確認
+                    card.textContent = gameState.specialHand[i];
+                    // 特別なカード固有のスタイルを追加したい場合はここ
+                    card.classList.add('cursor-pointer'); // クリック可能にする
+                } else {
+                    card.classList.add('opacity-30', 'cursor-not-allowed'); // 空の場合は半透明でクリック不可
+                    card.textContent = ''; // 空のカードとして表示
+                }
+
+                // 選択状態のスタイル適用
+                if (gameState.selectedSpecialCardIndex === i) {
+                    card.classList.add('selected');
+                }
+
+                // イベントリスナーは初期化時にまとめて設定済みのため、ここでは追加・削除しない
+            }
+            updateCardDescriptionUI();
+        }
+
+        function handleSpecialCardClick(event) {
+            if (gameState.gameOver) return;
+            const cardElement = event.target.closest('.special-card');
+            if (cardElement && !cardElement.classList.contains('opacity-30')) {
+                const cardIndex = parseInt(cardElement.dataset.specialCardIndex);
+                if (gameState.specialHand[cardIndex]) {
+                    selectSpecialCard(cardIndex);
+                }
+            }
+        }
+
+
+        // ボードの表示を更新
+        function updateBoardUI() {
+            domElements.boardContainer.querySelectorAll('.hex-cell').forEach((cell) => {
+                const slotIndex = parseInt(cell.dataset.slotIndex);
+                const cellInner = cell.querySelector('.hex-inner');
+                cellInner.className = 'hex-inner'; // クラスをリセット
+
+                if (gameState.board[slotIndex] && !gameState.board[slotIndex].empty) {
+                    const enemy = gameState.board[slotIndex].enemy;
+                    cellInner.textContent = enemy.type;
+                    cellInner.innerHTML += `<div class="hp-bar"><div class="hp-fill" style="width: ${(enemy.hp / enemy.maxHp) * 100}%; background-color: ${enemy.hp <= enemy.maxHp / 2 ? 'red' : enemy.hp <= enemy.maxHp * 0.75 ? 'yellow' : 'green'};"></div><span class="hp-text">${enemy.hp}</span></div>`;
+                    switch (enemy.type) {
+                        case '🔥': cellInner.classList.add('bg-red-500'); break;
+                        case '💧': cellInner.classList.add('bg-blue-500'); break;
+                        case '☀️': cellInner.classList.add('bg-yellow-500'); break;
+                        case '🌱': cellInner.classList.add('bg-green-500'); break;
+                        case '👿': cellInner.classList.add('bg-purple-500'); break;
+                    }
+                } else {
+                    cellInner.classList.add('bg-gray-400');
+                    cellInner.textContent = 'Empty';
+                }
+            });
+        }
+
+        // 倒した敵の数を更新
+        function updateKillCountUI() {
+            domElements.killCountDisplay.textContent = `倒した敵の数: ${gameState.killCount}/${gameSettings.killTarget}\nLv: ${gameState.playerLevel}\nExp: ${gameState.playerXp} 　(+ ${gameState.expAdded})`;
+            gameState.expAdded = 0;
+        }
+
+        // カードの説明を更新
+        function updateCardDescriptionUI() {
+            let description = '選択したカードの効果を表示';
+            let damageText = '';
+
+            if (gameState.selectedCardIndex !== null) {
+                const cardType = gameState.hand[gameState.selectedCardIndex];
+                description = gameSettings.cardDescriptions[cardType] || description;
+                const baseDamage = gameSettings.baseDamage[cardType] || 0;
+                damageText = `<span class="damage-text">基本ダメージ: ${baseDamage + gameState.playerLevel}</span>`;
+            } else if (gameState.selectedSpecialCardIndex !== null) {
+                const cardType = gameState.specialHand[gameState.selectedSpecialCardIndex];
+                description = gameSettings.specialCardDescriptions[cardType] || description;
+                const baseDamage = gameSettings.specialCardBaseDamage[cardType] || 0;
+                damageText = `<span class="damage-text">基本ダメージ: ${baseDamage + gameState.playerLevel}</span>`;
+            } else {
+                damageText = '';
+            }
+
+            domElements.cardDescription.innerHTML = `${description}<br>${damageText}`;
+        }
+
+        // メッセージボックスの更新
+        function updateMessageBoxUI(message) {
+            domElements.messageBox.textContent = message;
+        }
+
+        // カードの選択
+        function selectCard(index) {
+            if (gameState.gameOver || !gameState.handSelectionEnabled) return;
+
+            // 選択状態を上書き
+            if (index >= 0 && index < 5) {
+                gameState.selectedCardIndex = index;
+                gameState.selectedSpecialCardIndex = null;
+            } else {
+                gameState.selectedSpecialCardIndex = index - 5; // 特別な手札のインデックスを調整
+                gameState.selectedCardIndex = null;
+            }
+
+            updateHandUI();
+            updateSpecialHandUI();
+            updateCardDescriptionUI();
+            updateMessageBoxUI('攻撃するマスを選択してください');
+        }
+
+        // 特別なカードの選択
+        function selectSpecialCard(index) {
+            if (gameState.gameOver) return;
+            gameState.selectedCardIndex = null; // 通常の手札の選択を解除
+            gameState.selectedSpecialCardIndex = index;
+            updateHandUI();
+            updateSpecialHandUI();
+            updateCardDescriptionUI();
+            updateMessageBoxUI('攻撃するマスを選択してください');
+        }
+
+        // 攻撃
+        function attack(slotIndex) {
+            if (gameState.gameOver) return;
+
+            let cardType = null;
+            let baseDamage = 0;
+            let selectedIndex = null;
+
+            if (gameState.selectedCardIndex !== null) {
+                cardType = gameState.hand[gameState.selectedCardIndex];
+                baseDamage = gameSettings.baseDamage[cardType] + gameState.playerLevel;
+                selectedIndex = gameState.selectedCardIndex;
+                
+            } else if (gameState.selectedSpecialCardIndex !== null) {
+                cardType = gameState.specialHand[gameState.selectedSpecialCardIndex];
+                baseDamage = gameSettings.specialCardBaseDamage[cardType] + gameState.playerLevel;
+                selectedIndex = gameState.selectedSpecialCardIndex;
+                
+            } else {
+                updateMessageBoxUI('手札を先に選んでください');
+                return;
+            }
+
+            if (!gameState.board[slotIndex] || gameState.board[slotIndex].empty) {
+                updateMessageBoxUI('空のマスには攻撃できません');
+                return;
+            }
+
+            let enemiesKilled = 0;
+            const attackedSlot = gameState.board[slotIndex];
+            let damage = baseDamage; // 基本ダメージを代入
+
+            switch (cardType) {
+                case '⚡️': {
+                        const queue = [slotIndex];
+                        const damagedSlots = new Set();
+                        damagedSlots.add(slotIndex);
+                        attackedSlot.enemy.hp -= damage;
+                        if (attackedSlot.enemy.hp <= 0) {
+                            attackedSlot.empty = true;
+                            enemiesKilled++;
+                            handleBossSpawn();
+                        }
+
+                        while (queue.length > 0) {
+                            const currentSlotIndex = queue.shift();
+                            const adjacentSlots = gameSettings.adjacentSlots[currentSlotIndex] || [];
+                            for (const adjacentSlotIndex of adjacentSlots) {
+                                if (gameState.board[adjacentSlotIndex] && !damagedSlots.has(adjacentSlotIndex) && !gameState.board[adjacentSlotIndex].empty && gameState.board[adjacentSlotIndex].enemy.type === attackedSlot.enemy.type) {
+                                    damagedSlots.add(adjacentSlotIndex);
+                                    const chainDamage = Math.floor(damage * gameSettings.chainDamageMultiplier);
+                                    gameState.board[adjacentSlotIndex].enemy.hp -= chainDamage;
+                                    if (gameState.board[adjacentSlotIndex].enemy.hp <= 0) {
+                                        gameState.board[adjacentSlotIndex].empty = true;
+                                        enemiesKilled++;
+                                        handleBossSpawn();
+                                    }
+                                    queue.push(adjacentSlotIndex);
+                                }
+                            }
+                        }
+
+                    break;
+                }
+                case '🗡️': {
+                    damage += Math.floor(attackedSlot.enemy.maxHp / 5);
+                    // 共通処理でダメージ適用
+                    break;
+                }
+                case '💥': {
+                        const adjacentSlots = gameSettings.adjacentSlots[slotIndex] || [];
+                        const adjacentEnemies = adjacentSlots.filter(index => gameState.board[index] && !gameState.board[index].empty);
+                        const splashDamage = adjacentEnemies.length > 0 ? Math.floor((damage * gameSettings.splashDamageMultiplier) / adjacentEnemies.length) : 0;
+                        adjacentEnemies.forEach(adjacentSlotIndex => {
+                            gameState.board[adjacentSlotIndex].enemy.hp -= splashDamage;
+                            if (gameState.board[adjacentSlotIndex].enemy.hp <= 0) {
+                                gameState.board[adjacentSlotIndex].empty = true;
+                                enemiesKilled++;
+                                handleBossSpawn();
+                            }
+                        });
+                    break;
+                }
+                case '💀': {
+                        const targetEnemyType = attackedSlot.enemy.type;
+                        gameState.board.forEach(cell => {
+                            if (cell && !cell.empty && cell.enemy.type === targetEnemyType) {
+                                cell.enemy.hp -= baseDamage;
+                                if (cell.enemy.hp <= 0) {
+                                    cell.empty = true;
+                                    enemiesKilled++;
+                                    handleBossSpawn();
+                                }
+                            }
+                        });
+                    break;
+                }
+                case '🦠': {
+                        const targetEnemyType = attackedSlot.enemy.type;
+                        const adjacentSlots = gameSettings.adjacentSlots[slotIndex] || [];
+                        adjacentSlots.forEach(adjIndex => {
+                            if (gameState.board[adjIndex] && !gameState.board[adjIndex].empty) {
+                                gameState.board[adjIndex].enemy.type = targetEnemyType;
+                                gameState.board[adjIndex].enemy.hp -= baseDamage;
+                                if (gameState.board[adjIndex].enemy.hp <= 0) {
+                                    gameState.board[adjIndex].empty = true;
+                                    enemiesKilled++;
+                                    handleBossSpawn();
+                                }
+                            }
+                        });
+                        attackedSlot.enemy.hp -= baseDamage; // 選択した敵にも感染ダメージ
+                        if (attackedSlot.enemy.hp <= 0) {
+                            attackedSlot.empty = true;
+                            enemiesKilled++;
+                            handleBossSpawn();
+                        }
+                    break;
+                }
+                case '🌊': {
+                        gameState.board.forEach(cell => {
+                            if (cell && !cell.empty) {
+                                cell.enemy.hp -= baseDamage;
+                                if (cell.enemy.hp <= 0) {
+                                    cell.empty = true;
+                                    enemiesKilled++;
+                                    handleBossSpawn();
+                                }
+                            }
+                        });
+                    break;
+                }
+            }
+
+            // 共通ダメージ適用処理
+            if (cardType !== '⚡️' && cardType !== '💀' && cardType !== '🌊') { // 全体攻撃は個別処理
+                attackedSlot.enemy.hp -= damage;
+                if (attackedSlot.enemy.hp <= 0) {
+                    attackedSlot.empty = true;
+                    enemiesKilled++;
+                    handleBossSpawn();
+                }
+            }
+
+            updateMessageBoxUI('攻撃！');
+
+            // 使用したカードを空にする
+            if (selectedIndex !== null) {
+                if (gameState.selectedCardIndex !== null) {
+
+                    gameState.hand[gameState.selectedCardIndex] = undefined;
+                    gameState.hand = gameState.hand.filter(card => card !== undefined);
+                   
+                    //console.log(gameState.specialHand);
+                } else if (gameState.selectedSpecialCardIndex !== null) {
+                    gameState.specialHand[gameState.selectedSpecialCardIndex] = null;
+                    // 3つ目以降の要素を削除
+                    /*if (gameState.specialHand.length > 2) {
+                        gameState.specialHand.length = 2;
+                    }*/
+                   console.log(gameState.specialHand);
+                }
+            }
+
+                gameState.selectedCardIndex = null;
+                gameState.selectedSpecialCardIndex = null;
+                gameState.handSelectionEnabled = false; // 選択無効化
+
+                // カードに 'disabled' クラスを追加
+                domElements.handSlots.forEach(card => {
+                    if (!card.classList.contains('opacity-30')) { // 空のカードでなければ
+                        card.classList.add('disabled');
+                    }
+                });
+                domElements.specialHandSlots.forEach(card => {
+                    if (!card.classList.contains('opacity-30')) {
+                        card.classList.add('disabled');
+                    }
+                });
+
+            gameState.killCount += enemiesKilled;
+            updateHandUI();
+            updateSpecialHandUI();
+            updateBoardUI();
+            handleExperience(enemiesKilled);
+            updateKillCountUI();
+
+            setTimeout(() => {
+                // 倒した敵の数に応じてカードを引く
+                const cardsToDraw = Math.min(enemiesKilled, 5 - gameState.hand.length);
+                for (let i = 0; i < cardsToDraw; i++) {
+                    drawCard();
+                }
+
+                // 現在の空セル情報を記録
+                recordCurrentEmptySlots();
+
+                // ボードが完全に空になったかをチェック
+                const isBoardCompletelyEmpty = gameState.board.every(cell => !cell || cell.empty);
+                if (isBoardCompletelyEmpty) {
+                    // 全てのマスを補充対象とする
+                    gameState.emptySlotsPreviousTurn = Array.from({ length: gameSettings.boardSize }, (_, i) => i);
+                } else {
+                    // ターンの最後に、現在の空セル情報を前のターンの情報に移す
+                    gameState.emptySlotsPreviousTurn = [...gameState.emptySlotsCurrentTurn];
+                }
+                gameState.emptySlotsCurrentTurn = []; // 現在の空セル情報をリセット
+
+                // 前のターンに空だったセルに敵を補充
+                replenishEnemies();
+
+
+                gameState.handSelectionEnabled = true; // 選択を再び有効化
+
+                // 'disabled' クラスを削除
+                domElements.handSlots.forEach(card => {
+                    card.classList.remove('disabled');
+                });
+                domElements.specialHandSlots.forEach(card => {
+                    card.classList.remove('disabled');
+                });
+
+                updateHandUI();
+                updateSpecialHandUI();
+                updateBoardUI();
+
+                // ターンの最後に、現在の空セル情報を前のターンの情報に移す
+                gameState.emptySlotsPreviousTurn = [...gameState.emptySlotsCurrentTurn];
+                gameState.emptySlotsCurrentTurn = [];
+
+                updateMessageBoxUI('手札を選択してください');
+                
+                if (gameState.killCount >= gameSettings.killTarget) {
+                    gameState.gameOver = true;
+                    updateMessageBoxUI('ゲームクリア！');
+                    domElements.messageBox.classList.add('message-box-clear');
+                    endGame();
+                }
+
+                if (gameState.hand.length === 0 && gameState.specialHand.every(card => card === null) && gameState.board.some(cell => cell && !cell.empty)) {
+                gameState.gameOver = true;
+                updateMessageBoxUI('ゲームオーバー：手札がありません');
+                domElements.messageBox.classList.add('message-box-gameover');
+                endGame();
+                return;
+                }
+
+            }, 400);
+
+            gameState.handSelectionEnabled = true;
+        }
+
+
+        // ボス出現の判定
+        function handleBossSpawn() {
+            if (gameState.killCount >= gameState.forcePurpleEnemyCount) {
+                gameState.forcePurpleEnemy = true;
+                gameState.forcePurpleEnemyCount += gameState.forcePurpleEnemyThreshold;
+            }
+        }
+
+        // 敵の種類の生成
+        function generateEnemyType() {
+            if (gameState.forcePurpleEnemy) {
+                gameState.forcePurpleEnemy = false;
+                return '👿';
+            } else {
+                let rand = Math.random();
+                let cumulativeProbability = 0;
+                for (let i = 0; i < gameState.enemySpawnRates.length; i++) {
+                    cumulativeProbability += gameState.enemySpawnRates[i];
+                    if (rand < cumulativeProbability) {
+                        return gameSettings.enemyTypes[i];
+                    }
+                }
+                return gameSettings.enemyTypes[gameSettings.enemyTypes.length - 1];
+            }
+        }
+
+        // 経験値の処理
+        function handleExperience(enemiesKilled) {
+            gameState.expAdded = (enemiesKilled * gameSettings.experiencePerKill) + (enemiesKilled > 0 ? (enemiesKilled - 1) * gameSettings.experienceChainBonus : 0);
+            gameState.playerXp += gameState.expAdded;
+            gameState.specialCardChargeCounter += gameState.expAdded; // 特別なカードのチャージ
+
+            // 敵の抽選確率を変更
+            if (gameState.killCount >= gameSettings.midGameRatesCount && !gameState.isMidGameRatesActive) {
+            gameState.enemySpawnRates = [...gameSettings.enemySpawnRatesMidGame];
+            gameState.isMidGameRatesActive = true;
+            } else if (gameState.killCount >= gameSettings.finalGameRatesCount && !gameState.isFinalGameRatesActive) {
+            gameState.enemySpawnRates = [...gameSettings.enemySpawnRatesFinalGame];
+            gameState.isFinalGameRatesActive = true;
+            }
+
+            while (gameState.playerXp >= gameState.levelUpThreshold) {
+                gameState.playerLevel++;
+                gameState.levelUpThreshold += gameSettings.levelUpThreshold;
+            }
+
+            // 特別なカードの補充
+            while (gameState.specialCardChargeCounter >= gameState.specialCardChargeThreshold) {
+                gameState.specialCardChargeThreshold += gameState.specialCardChargeThreshold;
+                addSpecialCardToHand();
+                updateSpecialHandUI();
+            }
+        }
+
+        function addSpecialCardToHand() {
+            const emptySlotIndex = gameState.specialHand.findIndex(card => card === null);
+            if (emptySlotIndex !== -1) {
+                const randomCardType = gameSettings.specialCardTypes[Math.floor(Math.random() * gameSettings.specialCardTypes.length)];
+                gameState.specialHand[emptySlotIndex] = randomCardType;
+            }
+        }
+
+        // ゲーム終了処理
+        function endGame() {
+            domElements.handContainer.removeEventListener('click', handleHandClick);
+            domElements.boardContainer.removeEventListener('click', handleBoardClick);
+            domElements.specialHandContainer.removeEventListener('click', handleSpecialHandClick);
+
+            domElements.handContainer.classList.add('disabled-overlay');
+            domElements.boardContainer.classList.add('disabled-overlay');
+            domElements.specialHandContainer.classList.add('disabled-overlay');
+            domElements.messageBox.classList.add('message-box-clear');
+        }
+
+        // ゲームの初期化
+        initializeGame();
+    </script>
+</body>
+</html>
