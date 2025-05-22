@@ -750,14 +750,10 @@
                     // 全てのマスを補充対象とする
                     gameState.emptySlotsPreviousTurn = Array.from({ length: gameSettings.boardSize }, (_, i) => i);
                 } else {
-                    // ターンの最後に、現在の空セル情報を前のターンの情報に移す
-                    gameState.emptySlotsPreviousTurn = [...gameState.emptySlotsCurrentTurn];
+                    // 前のターンに空だったセルに敵を補充
+                    replenishEnemies();
                 }
-                gameState.emptySlotsCurrentTurn = []; // 現在の空セル情報をリセット
-
-                // 前のターンに空だったセルに敵を補充
-                replenishEnemies();
-
+                //gameState.emptySlotsCurrentTurn = []; // 現在の空セル情報をリセット
 
                 gameState.handSelectionEnabled = true; // 選択を再び有効化
 
