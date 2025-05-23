@@ -9,7 +9,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {font-family: 'Arial', sans-serif;margin: 0;padding: 0;background-color: #111827;color: #f9fafb;display: flex;justify-content: center;align-items: center;min-height: 100vh;background-size: cover;background-position: center;flex-direction: column;}
-        #game-container {display: flex;flex-direction: row;align-items: flex-start;padding: 1.25rem;max-width: 90%;width: 100%;box-sizing: border-box;}
+        #game-container {display: flex;flex-direction: row;align-items: center;padding: 1.25rem;max-width: 100%;width: 100%;box-sizing: border-box;}
         #board-container {display: flex;flex-direction: column;align-items: center;margin-bottom: 0.75rem;width: 100%;max-width: 600px;margin-right: 2rem;}
         .row {display: flex;justify-content: center;margin-bottom: 0.25rem;width: 100%;}
         .hex-cell {width: 56px;height: 64px;display: flex;justify-content: center;align-items: center;margin: 0 0.25rem;border-radius: 0.5rem;font-size: 0.75rem;position: relative;animation: new-ally-fade-in 0.3s ease-out forwards;}
@@ -22,8 +22,8 @@
         #message-box {background-color: #17233c;color: #f9fafb;padding: 0.5rem;margin-bottom: 0.75rem;border-radius: 0.5rem;text-align: center;width: 100%;max-width: 600px;border: 2px solid;border-color: #6b7280;}
         .message-box-clear { background-color: #ffe35a !important; color: #062b08 !important; border-color: #fbaf21 !important; }
         .message-box-gameover { background-color: #aa2ac0 !important; color: #f3ffae !important; border-color: #f398ff !important; }
-        #right-container {display: flex;flex-direction: column;align-items: center;margin-left: 2rem;}
-        #card-description {background-color: #101520;color: #f9fafb;height: 4.0rem;padding: 0.5rem;margin-bottom: 2.5rem;border-radius: 0.5rem;text-align: center;width: 100%;max-width: 400px;border: 2px solid;border-color: #6b7280;white-space: pre-line;}
+        #right-container {display: flex;flex-direction: column;align-items: center;margin-left: 2rem;padding-right: 1rem;}
+        #card-description {background-color: #101520;color: #f9fafb;height: 4.0rem;padding: 0.5rem;margin-bottom: 2rem;border-radius: 0.5rem;text-align: center;width: 100%;max-width: 400px;border: 2px solid;border-color: #6b7280;white-space: pre-line;}
         #hand-container {display: flex;justify-content: center;margin-bottom: 0.95rem;width: 100%;max-width: 600px;}
         .card {width: 64px;height: 80px;display: flex;justify-content: center;align-items: center;margin: 0 0.5rem;cursor: pointer;border-radius: 0.5rem;box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0.2);transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;font-size: 1rem;background-color: #374151;color: #f9fafb;border: 2px solid;border-color: #4b5563;}
         .card:hover {transform: scale(1.2);box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0.3);}
@@ -40,7 +40,7 @@
         .hp-fill {height: 100%;background-color: #86ef7d;border-radius: 0.25rem;width: 100%;}
         .hp-text {position: absolute;top: -0.6rem;right: 0.04rem;font-size: 0.7rem;color: #333;z-index: 1;}
         .damage-text {font-size: 0.9rem; }
-        #game-explanation { height: 5.5em; overflow-y: auto; border: 2px solid #6b7280; background-color: #201c10; color: #f9fafb; padding: 0.5rem; border-radius: 0.5rem;  white-space: pre-line; text-align: left; margin-bottom: 0.75rem; max-width: 400px; width: 100%; box-sizing: border-box;}
+        #game-explanation { height: 5.7em; overflow-y: auto; border: 2px solid #6b7280; background-color: #201c10; color: #f9fafb; padding: 0.5rem; border-radius: 0.5rem;  white-space: pre-line; text-align: left; margin-bottom: 0.75rem; max-width: 400px; width: 100%; box-sizing: border-box;}
         @keyframes new-ally-fade-in { 0% { opacity: 0.5; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1); } }
         .disabled-overlay { opacity: 0.5; pointer-events: none; }
     </style>
@@ -126,21 +126,21 @@
             killTarget: 250,
             killsPerLevel: 5,
             levelUpThreshold: 50,
-            enemySpawnRatesInitial: [0.3, 0.6, 0, 0.1 ,0],
+            enemySpawnRatesInitial: [0.4, 0.5, 0, 0.1 ,0],
             midGameRatesCount: 35,
-            enemySpawnRatesMidGame: [0.35, 0.35, 0, 0.30, 0],
+            enemySpawnRatesMidGame: [0.35, 0.45, 0, 0.2, 0],
             finalGameRatesCount: 125,
             enemySpawnRatesFinalGame: [0.25, 0.25, 0.25, 0.25, 0],
             bossThresholdInitial: 50,
-            bossThresholdIncrement: 30,
+            bossThresholdIncrement: 25,
             chainDamageMultiplier: 0.8,
             splashDamageMultiplier: 2,
             experiencePerKill: 10,
             experienceChainBonus: 4,
             cardDescriptions: {
-                '⚡️': '⚡️：電撃。隣接する同じ種類の敵に連鎖ダメージ。',
+                '⚡️': '⚡️：電撃。隣接する同じ種類の敵に追加ダメージ。',
                 '🗡️': '🗡️：斬撃。敵の最大HPの1/5の追加ダメージ。',
-                '💥': '💥：爆発。周囲の敵の数に応じて分散ダメージ。'
+                '💥': '💥：爆発。周囲の敵の数に応じて追加ダメージ。'
             },
             baseDamage: {
                 '⚡️': 10,
@@ -149,9 +149,9 @@
             },
             specialCardTypes: ['💀', '🦠', '🌊'],
             specialCardDescriptions: {
-                '💀': '💀：呪縛。全ての同じ種類の敵に呪縛ダメージ。',
-                '🦠': '🦠：感染。隣接する敵を同化させ感染ダメージ。',
-                '🌊': '🌊：津波。全ての敵に津波ダメージ。'
+                '💀': '💀：呪縛。全ての同じ種類の敵にダメージ。',
+                '🦠': '🦠：感染。隣接する敵を同化させダメージ。',
+                '🌊': '🌊：津波。全ての敵にダメージ。'
             },
             specialCardBaseDamage: {
                 '💀': 20,
@@ -183,7 +183,7 @@
             turn: 1,
             specialHand: [null, null],
             specialCardChargeCounter: 0,
-            specialCardChargeThreshold: 300,
+            specialCardChargeThreshold: 400,
             emptySlotsPreviousTurn: [],
             emptySlotsCurrentTurn: []
         };
@@ -328,7 +328,7 @@
             if (generateEnemyType != '👿'){
                 gameState.bossExtraHpTimes = 0;
             } else {
-                gameState.bossExtraHpTimes = 1;
+                gameState.bossExtraHpTimes = 2;
             }
             const newHp = gameSettings.enemyHpValues[enemyType] + Math.floor(gameState.killCount / 5) * 3 + gameState.playerLevel * gameState.bossExtraHpTimes;
             gameState.board[slotIndex] = {
@@ -650,7 +650,7 @@
                         adjacentSlots.forEach(adjIndex => {
                             if (gameState.board[adjIndex] && !gameState.board[adjIndex].empty) {
                                 gameState.board[adjIndex].enemy.type = targetEnemyType;
-                                gameState.board[adjIndex].enemy.hp -= baseDamage;
+                                gameState.board[adjIndex].enemy.hp -= Math.floor(baseDamage * 0.3);
                                 if (gameState.board[adjIndex].enemy.hp <= 0) {
                                     gameState.board[adjIndex].empty = true;
                                     enemiesKilled++;
