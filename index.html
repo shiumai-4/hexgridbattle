@@ -137,6 +137,7 @@
             splashDamageMultiplier: 2,
             experiencePerKill: 10,
             experienceChainBonus: 4,
+            specialCardChargeThresholdAdd: 400,
             cardDescriptions: {
                 '⚡️': '⚡️：電撃。隣接する同じ種類の敵に追加ダメージ。',
                 '🗡️': '🗡️：斬撃。敵の最大HPの1/5の追加ダメージ。',
@@ -328,7 +329,7 @@
             if (generateEnemyType != '👿'){
                 gameState.bossExtraHpTimes = 0;
             } else {
-                gameState.bossExtraHpTimes = 2;
+                gameState.bossExtraHpTimes = 5;
             }
             const newHp = gameSettings.enemyHpValues[enemyType] + Math.floor(gameState.killCount / 5) * 3 + gameState.playerLevel * gameState.bossExtraHpTimes;
             gameState.board[slotIndex] = {
@@ -658,12 +659,6 @@
                                 }
                             }
                         });
-                        attackedSlot.enemy.hp -= baseDamage; // 選択した敵にも感染ダメージ
-                        if (attackedSlot.enemy.hp <= 0) {
-                            attackedSlot.empty = true;
-                            enemiesKilled++;
-                            handleBossSpawn();
-                        }
                     break;
                 }
                 case '🌊': {
@@ -844,7 +839,7 @@
 
             // 特別なカードの補充
             while (gameState.specialCardChargeCounter >= gameState.specialCardChargeThreshold) {
-                gameState.specialCardChargeThreshold += gameState.specialCardChargeThreshold;
+                gameState.specialCardChargeThreshold += gameSettings.specialCardChargeThresholdAdd;
                 addSpecialCardToHand();
                 updateSpecialHandUI();
             }
