@@ -329,9 +329,9 @@
             if (generateEnemyType != '👿'){
                 gameState.bossExtraHpTimes = 0;
             } else {
-                gameState.bossExtraHpTimes = 5;
+                gameState.bossExtraHpTimes = 8;
             }
-            const newHp = gameSettings.enemyHpValues[enemyType] + Math.floor(gameState.killCount / 5) * 3 + gameState.playerLevel * gameState.bossExtraHpTimes;
+            const newHp = gameSettings.enemyHpValues[enemyType] + Math.floor(gameState.killCount / 15) * 10 + gameState.playerLevel * gameState.bossExtraHpTimes;
             gameState.board[slotIndex] = {
                 enemy: {
                     type: enemyType,
