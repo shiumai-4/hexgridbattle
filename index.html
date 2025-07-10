@@ -102,7 +102,7 @@
         </div>
     </div>
     <script>
-        // ゲーム設定
+// ゲーム設定
         const gameSettings = {
             initialHandSize: 5,
             boardSize: 19,
@@ -126,7 +126,8 @@
             killTarget: 250,
             killsPerLevel: 5,
             levelUpThreshold: 50,
-            enemySpawnRatesInitial: [0.4, 0.5, 0, 0.1 ,0],
+            specialCardChargeThreshold: 400,
+            enemySpawnRatesInitial: [0.4, 0.5, 0.1, 0 ,0],
             midGameRatesCount: 35,
             enemySpawnRatesMidGame: [0.35, 0.45, 0, 0.2, 0],
             finalGameRatesCount: 125,
@@ -135,9 +136,8 @@
             bossThresholdIncrement: 25,
             chainDamageMultiplier: 0.8,
             splashDamageMultiplier: 2,
-            experiencePerKill: 5,
-            experienceChainBonus: 12,
-            specialCardChargeThresholdAdd: 400,
+            experiencePerKill: 10,
+            experienceChainBonus: 4,
             cardDescriptions: {
                 '⚡️': '⚡️：電撃。隣接する同じ種類の敵に追加ダメージ。',
                 '🗡️': '🗡️：斬撃。敵の最大HPの1/5の追加ダメージ。',
@@ -172,8 +172,9 @@
             handSelectionEnabled: true,
             playerLevel: 1,
             playerXp: 0,
+            playerXpTotal: 0,
+            expForNextLevel: 0,
             expAdded: 0,
-            levelUpThreshold: gameSettings.levelUpThreshold,
             enemySpawnRates: [...gameSettings.enemySpawnRatesInitial],
             isMidGameRatesActive: false,
             isFinalGameRatesActive: false,
@@ -184,7 +185,7 @@
             turn: 1,
             specialHand: [null, null],
             specialCardChargeCounter: 0,
-            specialCardChargeThreshold: 400,
+            specialCardChargeAdd: 400,
             emptySlotsPreviousTurn: [],
             emptySlotsCurrentTurn: []
         };
@@ -215,7 +216,7 @@
 3.  **攻撃対象選択**: ボード上の敵がいるマスをクリックして攻撃します。
 4.  **攻撃実行**: 選んだカードの効果で敵にダメージを与えます。敵のHPが0になると倒されます。
 5.  **カード補充と成長**: 敵を倒すと新しいカードが手札に補充されます。
-　　倒した敵の数に応じて経験値が得られ、経験値が${gameSettings.levelUpThreshold}ごとにプレイヤーのレベルと攻撃力が上がります。
+　　倒した敵の数に応じて経験値が得られ、レベルアップすると攻撃力が上がります。
 　　敵を同時に倒すと経験値ボーナス！
 
 **カードの種類と効果**
@@ -248,8 +249,10 @@
             gameState.handSelectionEnabled = true;
             gameState.playerLevel = 1;
             gameState.playerXp = 0;
+            gameState.playerXpTotal = 0;
+            gameState.expForNextLevel = 0;
             gameState.expAdded = 0;
-            gameState.levelUpThreshold = gameSettings.levelUpThreshold;
+            gameState.specialCardChargeAdd = 0;
             gameState.enemySpawnRates = [...gameSettings.enemySpawnRatesInitial];
             gameState.isMidGameRatesActive = false;
             gameState.isFinalGameRatesActive = false;
@@ -329,9 +332,9 @@
             if (generateEnemyType != '👿'){
                 gameState.bossExtraHpTimes = 0;
             } else {
-                gameState.bossExtraHpTimes = 8;
+                gameState.bossExtraHpTimes = 2;
             }
-            const newHp = gameSettings.enemyHpValues[enemyType] + Math.floor(gameState.killCount / 15) * 10 + gameState.playerLevel * gameState.bossExtraHpTimes;
+            const newHp = gameSettings.enemyHpValues[enemyType] + Math.floor(gameState.killCount / 5) * 3 + gameState.playerLevel * gameState.bossExtraHpTimes;
             gameState.board[slotIndex] = {
                 enemy: {
                     type: enemyType,
@@ -383,12 +386,12 @@
                 card.classList.add('card');
                 card.dataset.cardIndex = i;
 
-                if (gameState.hand[i] !== undefined) { // gameState.hand[i] が存在するか確認
+                if (gameState.hand[i] !== undefined) { 
                     card.textContent = gameState.hand[i];
                     if (gameState.handSelectionEnabled) {
                         card.classList.add('cursor-pointer');
                         card.classList.remove('opacity-50', 'cursor-not-allowed');
-                        card.addEventListener('click', handleCardClick); // イベントリスナーを個々のカードに設定
+                        card.addEventListener('click', handleCardClick);
                     } else {
                         card.classList.add('opacity-50', 'cursor-not-allowed', 'cursor-default');
                         card.removeEventListener('click', handleCardClick);
@@ -406,44 +409,35 @@
             updateCardDescriptionUI();
         }
 
-        // 個々のカードにイベントリスナーを設定するためのヘルパー関数
         function handleCardClick(event) {
             if (!gameState.handSelectionEnabled || gameState.gameOver) return;
             const cardElement = event.target.closest('.card');
             if (cardElement && !cardElement.classList.contains('opacity-30')) {
                 const cardIndex = parseInt(cardElement.dataset.cardIndex);
-                // ここで gameState.hand[cardIndex] が存在するかどうかを確認
                 if (gameState.hand[cardIndex] !== undefined) {
                     selectCard(cardIndex);
                 }
-                // 有効なカードでなければ、何もしない
             }
         }
 
         function updateSpecialHandUI() {
-            // 新しいspecialHandSlotsを取得し直す
             domElements.specialHandSlots = document.querySelectorAll('#special-hand-container .special-card');
 
-            // 常に2つのスロットを処理
             for (let i = 0; i < 2; i++) {
-                const card = domElements.specialHandSlots[i]; // HTMLで定義済みのスロットを取得
-                card.classList.remove('selected', 'opacity-30', 'cursor-not-allowed', 'cursor-pointer'); // クラスをリセット
+                const card = domElements.specialHandSlots[i];
+                card.classList.remove('selected', 'opacity-30', 'cursor-not-allowed', 'cursor-pointer'); 
 
-                if (gameState.specialHand[i]) { // gameState.specialHand[i] がnullでないか確認
+                if (gameState.specialHand[i]) { 
                     card.textContent = gameState.specialHand[i];
-                    // 特別なカード固有のスタイルを追加したい場合はここ
-                    card.classList.add('cursor-pointer'); // クリック可能にする
+                    card.classList.add('cursor-pointer'); 
                 } else {
-                    card.classList.add('opacity-30', 'cursor-not-allowed'); // 空の場合は半透明でクリック不可
-                    card.textContent = ''; // 空のカードとして表示
+                    card.classList.add('opacity-30', 'cursor-not-allowed'); 
+                    card.textContent = '';
                 }
 
-                // 選択状態のスタイル適用
                 if (gameState.selectedSpecialCardIndex === i) {
                     card.classList.add('selected');
                 }
-
-                // イベントリスナーは初期化時にまとめて設定済みのため、ここでは追加・削除しない
             }
             updateCardDescriptionUI();
         }
@@ -465,7 +459,7 @@
             domElements.boardContainer.querySelectorAll('.hex-cell').forEach((cell) => {
                 const slotIndex = parseInt(cell.dataset.slotIndex);
                 const cellInner = cell.querySelector('.hex-inner');
-                cellInner.className = 'hex-inner'; // クラスをリセット
+                cellInner.className = 'hex-inner';
 
                 if (gameState.board[slotIndex] && !gameState.board[slotIndex].empty) {
                     const enemy = gameState.board[slotIndex].enemy;
@@ -487,8 +481,11 @@
 
         // 倒した敵の数を更新
         function updateKillCountUI() {
-            domElements.killCountDisplay.textContent = `倒した敵の数: ${gameState.killCount}/${gameSettings.killTarget}\nLv: ${gameState.playerLevel}\nExp: ${gameState.playerXp} 　(+ ${gameState.expAdded})`;
-            gameState.expAdded = 0;
+            const expBarWidth = (gameState.expForNextLevel / gameSettings.levelUpThreshold) * 100;
+            const expBar = `<div style="width: 100%; background-color: #4b5563; border-radius: 0.25rem; margin-top: 0.25rem; position: relative; height: 0.6rem;">` +
+                           `<div style="width: ${expBarWidth}%; background-color: #86ef7d; height: 100%; border-radius: 0.25rem;"></div></div>`;
+
+            domElements.killCountDisplay.innerHTML = `倒した敵の数: ${gameState.killCount}/${gameSettings.killTarget}<br>Lv: ${gameState.playerLevel}<br>Exp: ${gameState.playerXpTotal}  (+${gameState.expAdded})${expBar}`;
         }
 
         // カードの説明を更新
@@ -522,12 +519,11 @@
         function selectCard(index) {
             if (gameState.gameOver || !gameState.handSelectionEnabled) return;
 
-            // 選択状態を上書き
             if (index >= 0 && index < 5) {
                 gameState.selectedCardIndex = index;
                 gameState.selectedSpecialCardIndex = null;
             } else {
-                gameState.selectedSpecialCardIndex = index - 5; // 特別な手札のインデックスを調整
+                gameState.selectedSpecialCardIndex = index - 5; 
                 gameState.selectedCardIndex = null;
             }
 
@@ -540,7 +536,7 @@
         // 特別なカードの選択
         function selectSpecialCard(index) {
             if (gameState.gameOver) return;
-            gameState.selectedCardIndex = null; // 通常の手札の選択を解除
+            gameState.selectedCardIndex = null;
             gameState.selectedSpecialCardIndex = index;
             updateHandUI();
             updateSpecialHandUI();
@@ -578,7 +574,7 @@
 
             let enemiesKilled = 0;
             const attackedSlot = gameState.board[slotIndex];
-            let damage = baseDamage; // 基本ダメージを代入
+            let damage = baseDamage;
 
             switch (cardType) {
                 case '⚡️': {
@@ -614,7 +610,6 @@
                 }
                 case '🗡️': {
                     damage += Math.floor(attackedSlot.enemy.maxHp / 5);
-                    // 共通処理でダメージ適用
                     break;
                 }
                 case '💥': {
@@ -659,6 +654,12 @@
                                 }
                             }
                         });
+                        attackedSlot.enemy.hp -= baseDamage;
+                        if (attackedSlot.enemy.hp <= 0) {
+                            attackedSlot.empty = true;
+                            enemiesKilled++;
+                            handleBossSpawn();
+                        }
                     break;
                 }
                 case '🌊': {
@@ -676,8 +677,7 @@
                 }
             }
 
-            // 共通ダメージ適用処理
-            if (cardType !== '⚡️' && cardType !== '💀' && cardType !== '🌊') { // 全体攻撃は個別処理
+            if (cardType !== '⚡️' && cardType !== '💀' && cardType !== '🌊') {
                 attackedSlot.enemy.hp -= damage;
                 if (attackedSlot.enemy.hp <= 0) {
                     attackedSlot.empty = true;
@@ -688,39 +688,29 @@
 
             updateMessageBoxUI('攻撃！');
 
-            // 使用したカードを空にする
             if (selectedIndex !== null) {
                 if (gameState.selectedCardIndex !== null) {
-
                     gameState.hand[gameState.selectedCardIndex] = undefined;
                     gameState.hand = gameState.hand.filter(card => card !== undefined);
-                   
-                    //console.log(gameState.specialHand);
                 } else if (gameState.selectedSpecialCardIndex !== null) {
                     gameState.specialHand[gameState.selectedSpecialCardIndex] = null;
-                    // 3つ目以降の要素を削除
-                    /*if (gameState.specialHand.length > 2) {
-                        gameState.specialHand.length = 2;
-                    }*/
-                   console.log(gameState.specialHand);
                 }
             }
 
-                gameState.selectedCardIndex = null;
-                gameState.selectedSpecialCardIndex = null;
-                gameState.handSelectionEnabled = false; // 選択無効化
+            gameState.selectedCardIndex = null;
+            gameState.selectedSpecialCardIndex = null;
+            gameState.handSelectionEnabled = false;
 
-                // カードに 'disabled' クラスを追加
-                domElements.handSlots.forEach(card => {
-                    if (!card.classList.contains('opacity-30')) { // 空のカードでなければ
-                        card.classList.add('disabled');
-                    }
-                });
-                domElements.specialHandSlots.forEach(card => {
-                    if (!card.classList.contains('opacity-30')) {
-                        card.classList.add('disabled');
-                    }
-                });
+            domElements.handSlots.forEach(card => {
+                if (!card.classList.contains('opacity-30')) {
+                    card.classList.add('disabled');
+                }
+            });
+            domElements.specialHandSlots.forEach(card => {
+                if (!card.classList.contains('opacity-30')) {
+                    card.classList.add('disabled');
+                }
+            });
 
             gameState.killCount += enemiesKilled;
             updateHandUI();
@@ -730,29 +720,28 @@
             updateKillCountUI();
 
             setTimeout(() => {
-                // 倒した敵の数に応じてカードを引く
+
                 const cardsToDraw = Math.min(enemiesKilled, 5 - gameState.hand.length);
                 for (let i = 0; i < cardsToDraw; i++) {
                     drawCard();
                 }
 
-                // 現在の空セル情報を記録
                 recordCurrentEmptySlots();
 
-                // ボードが完全に空になったかをチェック
                 const isBoardCompletelyEmpty = gameState.board.every(cell => !cell || cell.empty);
+
                 if (isBoardCompletelyEmpty) {
-                    // 全てのマスを補充対象とする
                     gameState.emptySlotsPreviousTurn = Array.from({ length: gameSettings.boardSize }, (_, i) => i);
-                } else {
-                    // 前のターンに空だったセルに敵を補充
                     replenishEnemies();
+                    gameState.emptySlotsCurrentTurn = [];
+                } else {
+                    replenishEnemies();
+                    gameState.emptySlotsPreviousTurn = [...gameState.emptySlotsCurrentTurn];
+                    gameState.emptySlotsCurrentTurn = [];
                 }
-                //gameState.emptySlotsCurrentTurn = []; // 現在の空セル情報をリセット
 
-                gameState.handSelectionEnabled = true; // 選択を再び有効化
+                gameState.handSelectionEnabled = true;
 
-                // 'disabled' クラスを削除
                 domElements.handSlots.forEach(card => {
                     card.classList.remove('disabled');
                 });
@@ -764,10 +753,6 @@
                 updateSpecialHandUI();
                 updateBoardUI();
 
-                // ターンの最後に、現在の空セル情報を前のターンの情報に移す
-                gameState.emptySlotsPreviousTurn = [...gameState.emptySlotsCurrentTurn];
-                gameState.emptySlotsCurrentTurn = [];
-
                 updateMessageBoxUI('手札を選択してください');
                 
                 if (gameState.killCount >= gameSettings.killTarget) {
@@ -778,11 +763,11 @@
                 }
 
                 if (gameState.hand.length === 0 && gameState.specialHand.every(card => card === null) && gameState.board.some(cell => cell && !cell.empty)) {
-                gameState.gameOver = true;
-                updateMessageBoxUI('ゲームオーバー：手札がありません');
-                domElements.messageBox.classList.add('message-box-gameover');
-                endGame();
-                return;
+                    gameState.gameOver = true;
+                    updateMessageBoxUI('ゲームオーバー：手札がありません');
+                    domElements.messageBox.classList.add('message-box-gameover');
+                    endGame();
+                    return;
                 }
 
             }, 400);
@@ -819,27 +804,37 @@
 
         // 経験値の処理
         function handleExperience(enemiesKilled) {
-            gameState.expAdded = (enemiesKilled * gameSettings.experiencePerKill) + (enemiesKilled > 0 ? (enemiesKilled - 1) * gameSettings.experienceChainBonus : 0);
+            const isBoardCompletelyEmpty = gameState.board.every(cell => !cell || cell.empty);
+
+            if (isBoardCompletelyEmpty) {
+                // 全滅時は固定ボーナス
+                gameState.expAdded = gameState.specialCardChargeThreshold;
+            } else {
+                // 通常時は計算
+                gameState.expAdded = (enemiesKilled * gameSettings.experiencePerKill) + (enemiesKilled > 0 ? (enemiesKilled - 1) * gameSettings.experienceChainBonus : 0);
+            }
+            
+            gameState.playerXpTotal += gameState.expAdded;
             gameState.playerXp += gameState.expAdded;
-            gameState.specialCardChargeCounter += gameState.expAdded; // 特別なカードのチャージ
+            gameState.specialCardChargeCounter += gameState.expAdded;
 
-            // 敵の抽選確率を変更
             if (gameState.killCount >= gameSettings.midGameRatesCount && !gameState.isMidGameRatesActive) {
-            gameState.enemySpawnRates = [...gameSettings.enemySpawnRatesMidGame];
-            gameState.isMidGameRatesActive = true;
+                gameState.enemySpawnRates = [...gameSettings.enemySpawnRatesMidGame];
+                gameState.isMidGameRatesActive = true;
             } else if (gameState.killCount >= gameSettings.finalGameRatesCount && !gameState.isFinalGameRatesActive) {
-            gameState.enemySpawnRates = [...gameSettings.enemySpawnRatesFinalGame];
-            gameState.isFinalGameRatesActive = true;
+                gameState.enemySpawnRates = [...gameSettings.enemySpawnRatesFinalGame];
+                gameState.isFinalGameRatesActive = true;
             }
 
-            while (gameState.playerXp >= gameState.levelUpThreshold) {
+            while (gameState.playerXp >= gameSettings.levelUpThreshold) {
                 gameState.playerLevel++;
-                gameState.levelUpThreshold += gameSettings.levelUpThreshold;
+                gameState.playerXp -= gameSettings.levelUpThreshold;
             }
 
-            // 特別なカードの補充
-            while (gameState.specialCardChargeCounter >= gameState.specialCardChargeThreshold) {
-                gameState.specialCardChargeThreshold += gameSettings.specialCardChargeThresholdAdd;
+            gameState.expForNextLevel = gameState.playerXp % gameSettings.levelUpThreshold;
+
+            while (gameState.specialCardChargeCounter >= gameState.specialCardChargeAdd) {
+                gameState.specialCardChargeAdd += gameSettings.specialCardChargeThreshold;
                 addSpecialCardToHand();
                 updateSpecialHandUI();
             }
@@ -867,6 +862,7 @@
 
         // ゲームの初期化
         initializeGame();
+        
     </script>
 </body>
 </html>
