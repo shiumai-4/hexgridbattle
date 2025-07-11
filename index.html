@@ -43,6 +43,19 @@
         #game-explanation { height: 5.7em; overflow-y: auto; border: 2px solid #6b7280; background-color: #201c10; color: #f9fafb; padding: 0.5rem; border-radius: 0.5rem;  white-space: pre-line; text-align: left; margin-bottom: 0.75rem; max-width: 400px; width: 100%; box-sizing: border-box;}
         @keyframes new-ally-fade-in { 0% { opacity: 0.5; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1); } }
         .disabled-overlay { opacity: 0.5; pointer-events: none; }
+        
+        /* ▼▼▼ 追加したCSS ▼▼▼ */
+        .hidden { display: none; }
+        #modal-overlay { z-index: 40; }
+        #modal-content {
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 50;
+            width: 90%;
+            max-width: 500px;
+        }
+        /* ▲▲▲ 追加したCSS ▲▲▲ */
     </style>
 </head>
 <body class="bg-gray-900 text-gray-50">
@@ -98,6 +111,37 @@
             </div>
             <div id="card-description" class="mb-3 text-center"></div>
             <div id="game-explanation" class="mb-3 text-left overflow-y-auto">
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-4 flex justify-center">
+        <button id="reset-button" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded mr-2">リセット</button>
+        <button id="settings-button" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded">設定</button>
+    </div>
+
+    <div id="settings-modal" class="hidden">
+        <div id="modal-overlay" class="fixed inset-0 bg-black bg-opacity-50 cursor-pointer"></div>
+        <div id="modal-content" class="fixed bg-gray-800 p-6 rounded-lg shadow-xl border border-gray-600 text-center">
+            <h2 class="text-2xl font-bold mb-6">設定</h2>
+            
+            <div class="mb-5">
+                <h3 class="text-lg mb-2">難易度</h3>
+                <div class="flex justify-center space-x-2">
+                    <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-28">イージー</button>
+                    <button class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded w-28">ノーマル</button>
+                    <button class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded w-28">ハード</button>
+                </div>
+            </div>
+
+            <div class="mb-8">
+                <h3 class="text-lg mb-2">モード</h3>
+                <button class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded">エンドレスモード: OFF</button>
+            </div>
+
+            <div class="flex justify-end space-x-4">
+                <button id="cancel-button" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">キャンセル</button>
+                <button id="confirm-button" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">決定</button>
             </div>
         </div>
     </div>
@@ -252,7 +296,8 @@
             gameState.playerXpTotal = 0;
             gameState.expForNextLevel = 0;
             gameState.expAdded = 0;
-            gameState.specialCardChargeAdd = 0;
+            gameState.specialCardChargeCounter = 0;
+            gameState.specialCardChargeAdd = 400;
             gameState.enemySpawnRates = [...gameSettings.enemySpawnRatesInitial];
             gameState.isMidGameRatesActive = false;
             gameState.isFinalGameRatesActive = false;
@@ -261,6 +306,8 @@
             gameState.bossExtraHpTimes = 0;
             gameState.emptySlotsPreviousTurn = [];
             gameState.emptySlotsCurrentTurn = [];
+            gameState.specialHand = [null, null];
+
 
             domElements.gameExplanation.textContent = explanationText;
             updateMessageBoxUI('ゲーム開始');
@@ -270,6 +317,8 @@
                 drawCard();
             }
 
+            // ボードを一度クリア
+            gameState.board = Array(gameSettings.boardSize).fill(null);
             for (let i = 0; i < gameSettings.boardSize; i++) {
                 spawnEnemy(i);
             }
@@ -808,7 +857,7 @@
 
             if (isBoardCompletelyEmpty) {
                 // 全滅時は固定ボーナス
-                gameState.expAdded = gameState.specialCardChargeThreshold;
+                gameState.expAdded = gameSettings.specialCardChargeThreshold;
             } else {
                 // 通常時は計算
                 gameState.expAdded = (enemiesKilled * gameSettings.experiencePerKill) + (enemiesKilled > 0 ? (enemiesKilled - 1) * gameSettings.experienceChainBonus : 0);
@@ -857,11 +906,47 @@
             domElements.handContainer.classList.add('disabled-overlay');
             domElements.boardContainer.classList.add('disabled-overlay');
             domElements.specialHandContainer.classList.add('disabled-overlay');
-            domElements.messageBox.classList.add('message-box-clear');
+        }
+        
+        // ゲームリセット処理
+        function resetGame() {
+            // ゲームオーバー時のスタイルを解除
+            domElements.handContainer.classList.remove('disabled-overlay');
+            domElements.boardContainer.classList.remove('disabled-overlay');
+            domElements.specialHandContainer.classList.remove('disabled-overlay');
+            domElements.messageBox.classList.remove('message-box-clear', 'message-box-gameover');
+
+            // ゲームを再初期化
+            initializeGame();
         }
 
         // ゲームの初期化
         initializeGame();
+
+        // リセットボタンにイベントリスナーを追加
+        document.getElementById('reset-button').addEventListener('click', resetGame);
+        
+        // ▼▼▼ 追加した処理 ▼▼▼
+        // 設定モーダルのロジック
+        const settingsModal = document.getElementById('settings-modal');
+        const openSettingsButton = document.getElementById('settings-button');
+        const cancelButton = document.getElementById('cancel-button');
+        const confirmButton = document.getElementById('confirm-button');
+        const modalOverlay = document.getElementById('modal-overlay');
+
+        function openModal() {
+            settingsModal.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            settingsModal.classList.add('hidden');
+        }
+
+        openSettingsButton.addEventListener('click', openModal);
+        cancelButton.addEventListener('click', closeModal);
+        confirmButton.addEventListener('click', closeModal); // 現時点では決定ボタンもモーダルを閉じるだけ
+        modalOverlay.addEventListener('click', closeModal);
+        // ▲▲▲ 追加した処理 ▲▲▲
         
     </script>
 </body>
