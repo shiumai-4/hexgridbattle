@@ -54,6 +54,33 @@
             width: 90%;
             max-width: 500px;
         }
+
+        /* ▼▼▼ 変更箇所 ▼▼▼ */
+        .attack-effect {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 40px;
+            height: 40px;
+            pointer-events: none;
+            z-index: 20;
+            animation: attack-animation 0.4s ease-out forwards;
+        }
+
+        @keyframes attack-animation {
+            0% {
+                transform: translate(-50%, -50%) scale(0) rotate(0deg);
+                opacity: 0;
+            }
+            50% {
+                opacity: 0.5;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(1) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        /* ▲▲▲ 変更箇所 ▲▲▲ */
     </style>
 </head>
 <body class="bg-gray-900 text-gray-50">
@@ -120,7 +147,9 @@
             <div id="difficulty-indicator" class="w-4 h-4 rounded-full transition-colors" title="現在の難易度"></div>
             <div id="endless-mode-indicator" class="w-4 h-4 rounded-full transition-colors" title="エンドレスモード"></div>
         </div>
+        <div id="highscore-display" class="ml-4 text-lg text-yellow-400 font-bold" style="font-family: 'Press Start 2P', cursive;"></div>
     </div>
+
     <div id="settings-modal" class="hidden">
         <div id="modal-overlay" class="fixed inset-0 bg-black bg-opacity-50 cursor-pointer"></div>
         <div id="modal-content" class="fixed bg-gray-800 p-6 rounded-lg shadow-xl border border-gray-600 text-center">
@@ -155,6 +184,16 @@
             cardTypes: ['⚡️', '🗡️', '💥'],
             enemyTypes: ['🔥', '💧', '☀️', '🌱', '👿'],
             enemyHpValues: {'🔥': 15,'💧': 8,'☀️': 15,'🌱': 20,'👿': 150},
+            // ▼▼▼ 変更箇所 ▼▼▼
+            attackEffectImages: {
+                '⚡️': 'https://www.google.com/favicon.ico',
+                '🗡️': 'https://www.yahoo.com/favicon.ico',
+                '💥': 'https://www.amazon.com/favicon.ico',
+                '💀': 'https://www.wikipedia.org/favicon.ico',
+                '🦠': 'https://www.microsoft.com/favicon.ico',
+                '🌊': 'https://www.apple.com/favicon.ico'
+            },
+            // ▲▲▲ 変更箇所 ▲▲▲
             slotCoordinates: [
                 [0, 0], [1, 0], [2, 0],
                 [0.5, 1], [1.5, 1], [2.5, 1], [3.5, 1],
@@ -198,9 +237,7 @@
                 '🦠': 2,
                 '🌊': 10
             },
-            // ▲▲▲ 共通設定 ▲▲▲
 
-            // ▼▼▼ 難易度別設定 ▼▼▼
             difficultySettings: {
                 easy: {
                     killTarget: 100,
@@ -230,293 +267,101 @@
                     bossThresholdInitial: 50,
                 }
             }
-            // ▲▲▲ 難易度別設定 ▲▲▲
         };
 
-        // ゲームの状態
         const gameState = {
-            hand: [],
-            board: [],
-            selectedCardIndex: null,
-            selectedSpecialCardIndex: null,
-            killCount: 0,
-            gameOver: false,
-            handSelectionEnabled: true,
-            playerLevel: 1,
-            playerXp: 0,
-            playerXpTotal: 0,
-            expForNextLevel: 0,
-            expAdded: 0,
-            enemySpawnRates: [],
-            isMidGameRatesActive: false,
-            isFinalGameRatesActive: false,
-            forcePurpleEnemy: false,
-            forcePurpleEnemyCount: 0,
-            forcePurpleEnemyThreshold: 0,
-            bossExtraHpTimes: 0,
-            turn: 1,
-            specialHand: [null, null],
-            specialCardChargeCounter: 0,
-            specialCardChargeAdd: 400,
-            emptySlotsPreviousTurn: [],
-            difficulty: 'normal',
-            isEndlessMode: false,
-            emptySlotsCurrentTurn: []
+            hand: [], board: [], selectedCardIndex: null, selectedSpecialCardIndex: null, killCount: 0, gameOver: false, handSelectionEnabled: true, playerLevel: 1, playerXp: 0, playerXpTotal: 0, expForNextLevel: 0, expAdded: 0, enemySpawnRates: [], isMidGameRatesActive: false, isFinalGameRatesActive: false, forcePurpleEnemy: false, forcePurpleEnemyCount: 0, forcePurpleEnemyThreshold: 0, bossExtraHpTimes: 0, turn: 1, specialHand: [null, null], specialCardChargeCounter: 0, specialCardChargeAdd: 400, emptySlotsPreviousTurn: [], difficulty: 'normal', isEndlessMode: false, emptySlotsCurrentTurn: []
         };
 
-        // DOM要素のキャッシュ
         const domElements = {
-            handContainer: document.getElementById('hand-container'),
-            specialHandContainer: document.getElementById('special-hand-container'),
-            boardContainer: document.getElementById('board-container'),
-            messageBox: document.getElementById('message-box'),
-            killCountDisplay: document.getElementById('kill-count'),
-            cardDescription: document.getElementById('card-description'),
-            gameExplanation: document.getElementById('game-explanation'),
-            handSlots: null,
-            boardSlots: null,
-            specialHandSlots: null,
-            difficultyIndicator: document.getElementById('difficulty-indicator'), // ★追加
-            endlessModeIndicator: document.getElementById('endless-mode-indicator'), // ★追加
+            handContainer: document.getElementById('hand-container'), specialHandContainer: document.getElementById('special-hand-container'), boardContainer: document.getElementById('board-container'), messageBox: document.getElementById('message-box'), killCountDisplay: document.getElementById('kill-count'), cardDescription: document.getElementById('card-description'), gameExplanation: document.getElementById('game-explanation'), handSlots: null, boardSlots: null, specialHandSlots: null, difficultyIndicator: document.getElementById('difficulty-indicator'), endlessModeIndicator: document.getElementById('endless-mode-indicator'), highscoreDisplay: document.getElementById('highscore-display'),
         };
 
-        // 難易度設定を適用する関数
         function applyDifficultySettings(difficulty) {
             const newSettings = gameSettings.difficultySettings[difficulty];
-            if (newSettings) {
-                // gameSettingsのトップレベルに難易度設定をマージする
-                Object.assign(gameSettings, newSettings);
-            }
+            if (newSettings) { Object.assign(gameSettings, newSettings); }
         }
 
-        // ゲーム説明文を生成する関数
         function generateExplanationText() {
-            return `【ヘックスグリッドバトル】
-
-**目標**
-　敵を合計${gameSettings.killTarget === Infinity ? '∞' : gameSettings.killTarget}体倒すとゲームクリアです！
-
-**ゲームの基本的な流れ**
-1.  **ターン開始**: 前のターンに空になったマスに敵が補充されます。
-2.  **カード選択**: 手札から攻撃に使いたいカードを1枚選びます。
-3.  **攻撃対象選択**: ボード上の敵がいるマスをクリックして攻撃します。
-4.  **攻撃実行**: 選んだカードの効果で敵にダメージを与えます。敵のHPが0になると倒されます。
-5.  **カード補充と成長**: 敵を倒すと新しいカードが手札に補充されます。
-　　倒した敵の数に応じて経験値が得られ、レベルアップすると攻撃力が上がります。
-　　敵を同時に倒すと経験値ボーナス！
-
-**カードの種類と効果**
-* **通常カード**:
-    * ⚡️ (電撃)：隣接する同じ種類の敵に連鎖ダメージを与えます。
-    * 🗡️ (斬撃)：敵の最大HPの1/5の追加ダメージを与えます。
-    * 💥 (爆発)：周囲の敵の数に応じて分散ダメージを与えます。
-* **スペシャルカード**: 経験値を獲得することでチャージされ、手札に追加されます。
-    * 💀 (呪縛)：全ての同じ種類の敵に呪縛ダメージを与えます。
-    * 🦠 (感染)：隣接する敵を同じ種類に変化させ感染ダメージを与えます。
-    * 🌊 (津波)：全ての敵に津波ダメージを与えます。
-
-**敵について**
-　敵には🔥、💧、☀️、🌱、👿の5種類がいます。
-　敵は倒すごとに強くなって補充されます。
-　特定の討伐数に達すると、より強力なボス敵（👿）が強制的に出現することがあります。
-
-**ゲームオーバー**
-　手札が全てなくなると、ゲームオーバーとなります。
-`;
+            return `【ヘックスグリッドバトル】\n\n**目標**\n　敵を合計${gameSettings.killTarget === Infinity ? '∞' : gameSettings.killTarget}体倒すとゲームクリアです！\n\n**ゲームの基本的な流れ**\n1.  **ターン開始**: 前のターンに空になったマスに敵が補充されます。\n2.  **カード選択**: 手札から攻撃に使いたいカードを1枚選びます。\n3.  **攻撃対象選択**: ボード上の敵がいるマスをクリックして攻撃します。\n4.  **攻撃実行**: 選んだカードの効果で敵にダメージを与えます。敵のHPが0になると倒されます。\n5.  **カード補充と成長**: 敵を倒すと新しいカードが手札に補充されます。\n　　倒した敵の数に応じて経験値が得られ、レベルアップすると攻撃力が上がります。\n　　敵を同時に倒すと経験値ボーナス！\n\n**カードの種類と効果**\n* **通常カード**:\n    * ⚡️ (電撃)：隣接する同じ種類の敵に連鎖ダメージを与えます。\n    * 🗡️ (斬撃)：敵の最大HPの1/5の追加ダメージを与えます。\n    * 💥 (爆発)：周囲の敵の数に応じて分散ダメージを与えます。\n* **スペシャルカード**: 経験値を獲得することでチャージされ、手札に追加されます。\n    * 💀 (呪縛)：全ての同じ種類の敵に呪縛ダメージを与えます。\n    * 🦠 (感染)：隣接する敵を同じ種類に変化させ感染ダメージを与えます。\n    * 🌊 (津波)：全ての敵に津波ダメージを与えます。\n\n**敵について**\n　敵には🔥、💧、☀️、🌱、👿の5種類がいます。\n　敵は倒すごとに強くなって補充されます。\n　特定の討伐数に達すると、より強力なボス敵（👿）が強制的に出現することがあります。\n\n**ゲームオーバー**\n　手札が全てなくなると、ゲームオーバーとなります。\n`;
         }
+        
+        function getHighScoreKey() { return `hex-grid-battle-highscore-${gameState.difficulty}-${gameState.isEndlessMode ? 'on' : 'off'}`; }
+        function saveHighScore(score) { const key = getHighScoreKey(); const currentHighScore = parseInt(localStorage.getItem(key) || '0'); if (score > currentHighScore) { localStorage.setItem(key, score); updateHighScoreUI(); } }
+        function loadHighScore() { const key = getHighScoreKey(); return parseInt(localStorage.getItem(key) || '0'); }
+        function updateHighScoreUI() { const highScore = loadHighScore(); domElements.highscoreDisplay.textContent = `HighScore: ${highScore}`; }
 
-        // ★追加：設定インジケーターを更新する関数
         function updateStatusIndicators() {
-            // 既存の色クラスをリセット
             domElements.difficultyIndicator.className = 'w-4 h-4 rounded-full transition-colors';
             domElements.endlessModeIndicator.className = 'w-4 h-4 rounded-full transition-colors';
-
-            // 難易度インジケーターの色を設定
             switch (gameState.difficulty) {
-                case 'easy':
-                    domElements.difficultyIndicator.classList.add('bg-blue-600');
-                    break;
-                case 'normal':
-                    domElements.difficultyIndicator.classList.add('bg-yellow-500');
-                    break;
-                case 'hard':
-                    domElements.difficultyIndicator.classList.add('bg-red-600');
-                    break;
+                case 'easy': domElements.difficultyIndicator.classList.add('bg-blue-600'); break;
+                case 'normal': domElements.difficultyIndicator.classList.add('bg-yellow-500'); break;
+                case 'hard': domElements.difficultyIndicator.classList.add('bg-red-600'); break;
             }
-
-            // エンドレスモードインジケーターの色を設定
-            if (gameState.isEndlessMode) {
-                domElements.endlessModeIndicator.classList.add('bg-purple-600');
-            } else {
-                domElements.endlessModeIndicator.classList.add('bg-purple-800');
-            }
+            if (gameState.isEndlessMode) { domElements.endlessModeIndicator.classList.add('bg-purple-600'); } else { domElements.endlessModeIndicator.classList.add('bg-purple-800'); }
         }
 
+        // ▼▼▼ 変更箇所 ▼▼▼
+        function showAttackEffect(slotIndex, cardType) {
+            const imageUrl = gameSettings.attackEffectImages[cardType];
+            if (!imageUrl) return;
 
-        // 初期化
+            const cellElement = document.querySelector(`.hex-cell[data-slot-index="${slotIndex}"]`);
+            if (!cellElement) return;
+
+            const effectImage = document.createElement('img');
+            effectImage.src = imageUrl;
+            effectImage.className = 'attack-effect';
+
+            cellElement.appendChild(effectImage);
+
+            setTimeout(() => {
+                if (cellElement.contains(effectImage)) {
+                    cellElement.removeChild(effectImage);
+                }
+            }, 400);
+        }
+        // ▲▲▲ 変更箇所 ▲▲▲
+
         function initializeGame() {
-            // エンドレスモードがONならkillTargetを無限にする
-            if (gameState.isEndlessMode) {
-                gameSettings.killTarget = Infinity;
-            }
-
-            // gameStateを初期化
-            gameState.hand = [];
-            gameState.board = [];
-            gameState.selectedCardIndex = null;
-            gameState.selectedSpecialCardIndex = null;
-            gameState.killCount = 0;
-            gameState.gameOver = false;
-            gameState.handSelectionEnabled = true;
-            gameState.playerLevel = 1;
-            gameState.playerXp = 0;
-            gameState.playerXpTotal = 0;
-            gameState.expForNextLevel = 0;
-            gameState.expAdded = 0;
-            gameState.specialCardChargeCounter = 0;
-            gameState.specialCardChargeAdd = 400;
-            gameState.emptySlotsPreviousTurn = [];
-            gameState.emptySlotsCurrentTurn = [];
-            gameState.specialHand = [null, null];
-            
-            // 難易度設定をgameStateに反映
-            gameState.enemySpawnRates = [...gameSettings.enemySpawnRatesInitial];
-            gameState.forcePurpleEnemyCount = gameSettings.bossThresholdInitial;
-            gameState.forcePurpleEnemyThreshold = gameSettings.bossThresholdIncrement;
-            gameState.isMidGameRatesActive = false;
-            gameState.isFinalGameRatesActive = false;
-            gameState.forcePurpleEnemy = false;
-            gameState.bossExtraHpTimes = 0;
-
-            // UIを初期化
+            applyDifficultySettings(gameState.difficulty);
+            if (gameState.isEndlessMode) { gameSettings.killTarget = Infinity; }
+            Object.assign(gameState, { hand: [], board: [], selectedCardIndex: null, selectedSpecialCardIndex: null, killCount: 0, gameOver: false, handSelectionEnabled: true, playerLevel: 1, playerXp: 0, playerXpTotal: 0, expForNextLevel: 0, expAdded: 0, specialCardChargeCounter: 0, specialCardChargeAdd: 400, emptySlotsPreviousTurn: [], emptySlotsCurrentTurn: [], specialHand: [null, null], enemySpawnRates: [...gameSettings.enemySpawnRatesInitial], forcePurpleEnemyCount: gameSettings.bossThresholdInitial, forcePurpleEnemyThreshold: gameSettings.bossThresholdIncrement, isMidGameRatesActive: false, isFinalGameRatesActive: false, forcePurpleEnemy: false, bossExtraHpTimes: 0 });
             domElements.gameExplanation.textContent = generateExplanationText();
             updateMessageBoxUI('ゲーム開始');
             updateKillCountUI();
-            updateStatusIndicators(); // ★インジケーター更新
-
-            for (let i = 0; i < gameSettings.initialHandSize; i++) {
-                drawCard();
-            }
-
-            // ボードを一度クリア
+            updateStatusIndicators();
+            updateHighScoreUI();
+            for (let i = 0; i < gameSettings.initialHandSize; i++) { drawCard(); }
             gameState.board = Array(gameSettings.boardSize).fill(null);
-            for (let i = 0; i < gameSettings.boardSize; i++) {
-                spawnEnemy(i);
-            }
-
+            for (let i = 0; i < gameSettings.boardSize; i++) { spawnEnemy(i); }
             domElements.handSlots = document.querySelectorAll('#hand-container .card');
             domElements.boardSlots = document.querySelectorAll('#board-container .hex-cell');
             domElements.specialHandSlots = document.querySelectorAll('#special-hand-container .special-card');
-            
-            // イベントリスナーの設定
-            if (!domElements.handContainer.listener) {
-                domElements.handContainer.listener = handleHandClick;
-                domElements.handContainer.addEventListener('click', domElements.handContainer.listener);
-            }
-            if (!domElements.boardContainer.listener) {
-                domElements.boardContainer.listener = handleBoardClick;
-                domElements.boardContainer.addEventListener('click', domElements.boardContainer.listener);
-            }
-            if (!domElements.specialHandContainer.listener) {
-                domElements.specialHandContainer.listener = handleSpecialHandClick;
-                domElements.specialHandContainer.addEventListener('click', domElements.specialHandContainer.listener);
-            }
-
-
-            // ゲーム開始時の敵補充 (前のターンは存在しないので空)
+            if (!domElements.handContainer.listener) { domElements.handContainer.addEventListener('click', (domElements.handContainer.listener = handleHandClick)); }
+            if (!domElements.boardContainer.listener) { domElements.boardContainer.addEventListener('click', (domElements.boardContainer.listener = handleBoardClick)); }
+            if (!domElements.specialHandContainer.listener) { domElements.specialHandContainer.addEventListener('click', (domElements.specialHandContainer.listener = handleSpecialHandClick)); }
             replenishEnemies();
-
             updateHandUI();
             updateSpecialHandUI();
             updateBoardUI();
             updateMessageBoxUI('手札を選択してください');
-
-            // 初期状態の空セルを記録 (次のターンのために)
             recordCurrentEmptySlots();
         }
 
-        // 敵を補充する関数
         function replenishEnemies() {
-            gameState.emptySlotsPreviousTurn.forEach(emptySlotIndex => {
-                if (!gameState.board[emptySlotIndex] || gameState.board[emptySlotIndex].empty) {
-                    spawnEnemy(emptySlotIndex);
-                }
-            });
-            gameState.emptySlotsPreviousTurn = []; // リセット
+            gameState.emptySlotsPreviousTurn.forEach(emptySlotIndex => { if (!gameState.board[emptySlotIndex] || gameState.board[emptySlotIndex].empty) { spawnEnemy(emptySlotIndex); } });
+            gameState.emptySlotsPreviousTurn = [];
             updateBoardUI();
         }
 
-        // 現在の空セルを記録する関数
-        function recordCurrentEmptySlots() {
-            gameState.emptySlotsCurrentTurn = gameState.board.reduce((acc, cell, index) => {
-                if (!cell || cell.empty) {
-                    acc.push(index);
-                }
-                return acc;
-            }, []);
-        }
-
-        // カードを引く
-        function drawCard() {
-            if (gameState.hand.length < 5) {
-                const randomCardType = gameSettings.cardTypes[Math.floor(Math.random() * gameSettings.cardTypes.length)];
-                gameState.hand.push(randomCardType);
-            }
-        }
-
-        // 敵を生成する
-        function spawnEnemy(slotIndex) {
-            const enemyType = generateEnemyType();
-
-            if (generateEnemyType != '👿'){
-                gameState.bossExtraHpTimes = 0;
-            } else {
-                gameState.bossExtraHpTimes = 2;
-            }
-            const newHp = gameSettings.enemyHpValues[enemyType] + Math.floor(gameState.killCount / 5) * 3 + gameState.playerLevel * gameState.bossExtraHpTimes;
-            gameState.board[slotIndex] = {
-                enemy: {
-                    type: enemyType,
-                    hp: newHp,
-                    maxHp: newHp
-                },
-                empty: false
-            };
-        }
-
-        // 手札のクリック処理
-        function handleHandClick(event) {
-            if (!gameState.handSelectionEnabled || gameState.gameOver) return;
-            const cardElement = event.target.closest('.card');
-            if (cardElement) {
-                const cardIndex = parseInt(cardElement.dataset.cardIndex);
-                if (gameState.hand[cardIndex] !== undefined) {
-                    selectCard(cardIndex);
-                }
-            }
-        }
-
-        // ボードのクリック処理
-        function handleBoardClick(event) {
-            if (gameState.selectedCardIndex === null && gameState.selectedSpecialCardIndex === null || gameState.gameOver) return;
-            const hexCell = event.target.closest('.hex-cell');
-            if (hexCell) {
-                const slotIndex = parseInt(hexCell.dataset.slotIndex);
-                attack(slotIndex);
-            }
-        }
-
-        // 特別な手札のクリック処理
-        function handleSpecialHandClick(event) {
-            if (gameState.gameOver) return;
-            const cardElement = event.target.closest('.special-card');
-            if (cardElement) {
-                const cardIndex = parseInt(cardElement.dataset.specialCardIndex);
-                if (gameState.specialHand[cardIndex]) {
-                    selectCard(cardIndex + 5); // 通常の手札選択と同じ関数を使用
-                }
-            }
-        }
+        function recordCurrentEmptySlots() { gameState.emptySlotsCurrentTurn = gameState.board.reduce((acc, cell, index) => { if (!cell || cell.empty) { acc.push(index); } return acc; }, []); }
+        function drawCard() { if (gameState.hand.length < 5) { const randomCardType = gameSettings.cardTypes[Math.floor(Math.random() * gameSettings.cardTypes.length)]; gameState.hand.push(randomCardType); } }
+        function spawnEnemy(slotIndex) { const enemyType = generateEnemyType(); gameState.bossExtraHpTimes = (enemyType === '👿') ? 2 : 0; const newHp = gameSettings.enemyHpValues[enemyType] + Math.floor(gameState.killCount / 5) * 3 + gameState.playerLevel * gameState.bossExtraHpTimes; gameState.board[slotIndex] = { enemy: { type: enemyType, hp: newHp, maxHp: newHp }, empty: false }; }
+        function handleHandClick(event) { if (!gameState.handSelectionEnabled || gameState.gameOver) return; const cardElement = event.target.closest('.card'); if (cardElement) { const cardIndex = parseInt(cardElement.dataset.cardIndex); if (gameState.hand[cardIndex] !== undefined) { selectCard(cardIndex); } } }
+        function handleBoardClick(event) { if (gameState.selectedCardIndex === null && gameState.selectedSpecialCardIndex === null || gameState.gameOver) return; const hexCell = event.target.closest('.hex-cell'); if (hexCell) { const slotIndex = parseInt(hexCell.dataset.slotIndex); attack(slotIndex); } }
+        function handleSpecialHandClick(event) { if (gameState.gameOver) return; const cardElement = event.target.closest('.special-card'); if (cardElement) { const cardIndex = parseInt(cardElement.dataset.specialCardIndex); if (gameState.specialHand[cardIndex]) { selectCard(cardIndex + 5); } } }
 
         function updateHandUI() {
             domElements.handContainer.innerHTML = '';
@@ -524,22 +369,11 @@
                 const card = document.createElement('div');
                 card.classList.add('card');
                 card.dataset.cardIndex = i;
-
                 if (gameState.hand[i] !== undefined) { 
                     card.textContent = gameState.hand[i];
-                    if (gameState.handSelectionEnabled) {
-                        card.classList.add('cursor-pointer');
-                        card.classList.remove('opacity-50', 'cursor-not-allowed');
-                    } else {
-                        card.classList.add('opacity-50', 'cursor-not-allowed', 'cursor-default');
-                    }
-                    if (gameState.selectedCardIndex === i) {
-                        card.classList.add('selected');
-                    }
-                } else {
-                    card.classList.add('opacity-30', 'cursor-not-allowed');
-                    card.textContent = '';
-                }
+                    if (gameState.handSelectionEnabled) { card.classList.add('cursor-pointer'); card.classList.remove('opacity-50', 'cursor-not-allowed'); } else { card.classList.add('opacity-50', 'cursor-not-allowed', 'cursor-default'); }
+                    if (gameState.selectedCardIndex === i) { card.classList.add('selected'); }
+                } else { card.classList.add('opacity-30', 'cursor-not-allowed'); card.textContent = ''; }
                 domElements.handContainer.appendChild(card);
             }
             domElements.handSlots = document.querySelectorAll('#hand-container .card');
@@ -548,33 +382,20 @@
 
         function updateSpecialHandUI() {
             domElements.specialHandSlots = document.querySelectorAll('#special-hand-container .special-card');
-
             for (let i = 0; i < 2; i++) {
                 const card = domElements.specialHandSlots[i];
                 card.classList.remove('selected', 'opacity-30', 'cursor-not-allowed', 'cursor-pointer'); 
-
-                if (gameState.specialHand[i]) { 
-                    card.textContent = gameState.specialHand[i];
-                    card.classList.add('cursor-pointer'); 
-                } else {
-                    card.classList.add('opacity-30', 'cursor-not-allowed'); 
-                    card.textContent = '';
-                }
-
-                if (gameState.selectedSpecialCardIndex === i) {
-                    card.classList.add('selected');
-                }
+                if (gameState.specialHand[i]) { card.textContent = gameState.specialHand[i]; card.classList.add('cursor-pointer'); } else { card.classList.add('opacity-30', 'cursor-not-allowed'); card.textContent = ''; }
+                if (gameState.selectedSpecialCardIndex === i) { card.classList.add('selected'); }
             }
             updateCardDescriptionUI();
         }
 
-        // ボードの表示を更新
         function updateBoardUI() {
             domElements.boardContainer.querySelectorAll('.hex-cell').forEach((cell) => {
                 const slotIndex = parseInt(cell.dataset.slotIndex);
                 const cellInner = cell.querySelector('.hex-inner');
                 cellInner.className = 'hex-inner';
-
                 if (gameState.board[slotIndex] && !gameState.board[slotIndex].empty) {
                     const enemy = gameState.board[slotIndex].enemy;
                     cellInner.textContent = enemy.type;
@@ -586,29 +407,20 @@
                         case '🌱': cellInner.classList.add('bg-green-500'); break;
                         case '👿': cellInner.classList.add('bg-purple-500'); break;
                     }
-                } else {
-                    cellInner.classList.add('bg-gray-400');
-                    cellInner.textContent = 'Empty';
-                }
+                } else { cellInner.classList.add('bg-gray-400'); cellInner.textContent = 'Empty'; }
             });
         }
 
-        // 倒した敵の数を更新
         function updateKillCountUI() {
             const expBarWidth = (gameState.expForNextLevel / gameSettings.levelUpThreshold) * 100;
-            const expBar = `<div style="width: 100%; background-color: #4b5563; border-radius: 0.25rem; margin-top: 0.25rem; position: relative; height: 0.6rem;">` +
-                           `<div style="width: ${expBarWidth}%; background-color: #86ef7d; height: 100%; border-radius: 0.25rem;"></div></div>`;
-            
+            const expBar = `<div style="width: 100%; background-color: #4b5563; border-radius: 0.25rem; margin-top: 0.25rem; position: relative; height: 0.6rem;"><div style="width: ${expBarWidth}%; background-color: #86ef7d; height: 100%; border-radius: 0.25rem;"></div></div>`;
             const targetDisplay = gameSettings.killTarget === Infinity ? '∞' : gameSettings.killTarget;
-
             domElements.killCountDisplay.innerHTML = `倒した敵の数: ${gameState.killCount}/${targetDisplay}<br>Lv: ${gameState.playerLevel}<br>Exp: ${gameState.playerXpTotal}  (+${gameState.expAdded})${expBar}`;
         }
 
-        // カードの説明を更新
         function updateCardDescriptionUI() {
             let description = '選択したカードの効果を表示';
             let damageText = '';
-
             if (gameState.selectedCardIndex !== null) {
                 const cardType = gameState.hand[gameState.selectedCardIndex];
                 description = gameSettings.cardDescriptions[cardType] || description;
@@ -619,439 +431,187 @@
                 description = gameSettings.specialCardDescriptions[cardType] || description;
                 const baseDamage = gameSettings.specialCardBaseDamage[cardType] || 0;
                 damageText = `<span class="damage-text">基本ダメージ: ${baseDamage + gameState.playerLevel}</span>`;
-            } else {
-                damageText = '';
             }
-
             domElements.cardDescription.innerHTML = `${description}<br>${damageText}`;
         }
 
-        // メッセージボックスの更新
-        function updateMessageBoxUI(message) {
-            domElements.messageBox.textContent = message;
-        }
-
-        // カードの選択
+        function updateMessageBoxUI(message) { domElements.messageBox.textContent = message; }
         function selectCard(index) {
             if (gameState.gameOver || !gameState.handSelectionEnabled) return;
-
-            if (index >= 0 && index < 5) {
-                gameState.selectedCardIndex = index;
-                gameState.selectedSpecialCardIndex = null;
-            } else {
-                gameState.selectedSpecialCardIndex = index - 5; 
-                gameState.selectedCardIndex = null;
-            }
-
-            updateHandUI();
-            updateSpecialHandUI();
-            updateCardDescriptionUI();
-            updateMessageBoxUI('攻撃するマスを選択してください');
+            if (index >= 0 && index < 5) { gameState.selectedCardIndex = index; gameState.selectedSpecialCardIndex = null; } else { gameState.selectedSpecialCardIndex = index - 5; gameState.selectedCardIndex = null; }
+            updateHandUI(); updateSpecialHandUI(); updateCardDescriptionUI(); updateMessageBoxUI('攻撃するマスを選択してください');
         }
 
-        // 攻撃
+        // ▼▼▼ 変更箇所 ▼▼▼
         function attack(slotIndex) {
             if (gameState.gameOver) return;
-
-            let cardType = null;
-            let baseDamage = 0;
-            let selectedIndex = null;
-
-            if (gameState.selectedCardIndex !== null) {
-                cardType = gameState.hand[gameState.selectedCardIndex];
-                baseDamage = gameSettings.baseDamage[cardType] + gameState.playerLevel;
-                selectedIndex = gameState.selectedCardIndex;
-                
-            } else if (gameState.selectedSpecialCardIndex !== null) {
-                cardType = gameState.specialHand[gameState.selectedSpecialCardIndex];
-                baseDamage = gameSettings.specialCardBaseDamage[cardType] + gameState.playerLevel;
-                selectedIndex = gameState.selectedSpecialCardIndex;
-                
-            } else {
-                updateMessageBoxUI('手札を先に選んでください');
-                return;
-            }
-
-            if (!gameState.board[slotIndex] || gameState.board[slotIndex].empty) {
-                updateMessageBoxUI('空のマスには攻撃できません');
-                return;
-            }
+            let cardType = null, baseDamage = 0, selectedIndex = null;
+            if (gameState.selectedCardIndex !== null) { cardType = gameState.hand[gameState.selectedCardIndex]; baseDamage = gameSettings.baseDamage[cardType] + gameState.playerLevel; selectedIndex = gameState.selectedCardIndex; } else if (gameState.selectedSpecialCardIndex !== null) { cardType = gameState.specialHand[gameState.selectedSpecialCardIndex]; baseDamage = gameSettings.specialCardBaseDamage[cardType] + gameState.playerLevel; selectedIndex = gameState.selectedSpecialCardIndex; } else { updateMessageBoxUI('手札を先に選んでください'); return; }
+            if (!gameState.board[slotIndex] || gameState.board[slotIndex].empty) { updateMessageBoxUI('空のマスには攻撃できません'); return; }
 
             let enemiesKilled = 0;
             const attackedSlot = gameState.board[slotIndex];
-            let damage = baseDamage;
-
+            
             switch (cardType) {
                 case '⚡️': {
-                        const queue = [slotIndex];
-                        const damagedSlots = new Set();
-                        damagedSlots.add(slotIndex);
-                        attackedSlot.enemy.hp -= damage;
-                        if (attackedSlot.enemy.hp <= 0) {
-                            attackedSlot.empty = true;
-                            enemiesKilled++;
-                            handleBossSpawn();
-                        }
-
-                        while (queue.length > 0) {
-                            const currentSlotIndex = queue.shift();
+                    const queue = [slotIndex];
+                    const damagedSlots = new Set();
+                    while (queue.length > 0) {
+                        const currentSlotIndex = queue.shift();
+                        if (damagedSlots.has(currentSlotIndex)) continue;
+                        damagedSlots.add(currentSlotIndex);
+                        const damage = currentSlotIndex === slotIndex ? baseDamage : Math.floor(baseDamage * gameSettings.chainDamageMultiplier);
+                        const currentCell = gameState.board[currentSlotIndex];
+                        if (currentCell && !currentCell.empty) {
+                            currentCell.enemy.hp -= damage;
+                            showAttackEffect(currentSlotIndex, cardType);
+                            if (currentCell.enemy.hp <= 0) { currentCell.empty = true; enemiesKilled++; handleBossSpawn(); }
                             const adjacentSlots = gameSettings.adjacentSlots[currentSlotIndex] || [];
-                            for (const adjacentSlotIndex of adjacentSlots) {
-                                if (gameState.board[adjacentSlotIndex] && !damagedSlots.has(adjacentSlotIndex) && !gameState.board[adjacentSlotIndex].empty && gameState.board[adjacentSlotIndex].enemy.type === attackedSlot.enemy.type) {
-                                    damagedSlots.add(adjacentSlotIndex);
-                                    const chainDamage = Math.floor(damage * gameSettings.chainDamageMultiplier);
-                                    gameState.board[adjacentSlotIndex].enemy.hp -= chainDamage;
-                                    if (gameState.board[adjacentSlotIndex].enemy.hp <= 0) {
-                                        gameState.board[adjacentSlotIndex].empty = true;
-                                        enemiesKilled++;
-                                        handleBossSpawn();
-                                    }
-                                    queue.push(adjacentSlotIndex);
-                                }
-                            }
+                            for (const adjacentSlotIndex of adjacentSlots) { if (gameState.board[adjacentSlotIndex] && !gameState.board[adjacentSlotIndex].empty && gameState.board[adjacentSlotIndex].enemy.type === attackedSlot.enemy.type) { queue.push(adjacentSlotIndex); } }
                         }
-
+                    }
                     break;
                 }
                 case '🗡️': {
-                    damage += Math.floor(attackedSlot.enemy.maxHp / 5);
+                    let damage = baseDamage + Math.floor(attackedSlot.enemy.maxHp / 5);
+                    attackedSlot.enemy.hp -= damage;
+                    showAttackEffect(slotIndex, cardType);
+                    if (attackedSlot.enemy.hp <= 0) { attackedSlot.empty = true; enemiesKilled++; handleBossSpawn(); }
                     break;
                 }
                 case '💥': {
-                        const adjacentSlots = gameSettings.adjacentSlots[slotIndex] || [];
-                        const adjacentEnemies = adjacentSlots.filter(index => gameState.board[index] && !gameState.board[index].empty);
-                        const splashDamage = adjacentEnemies.length > 0 ? Math.floor((damage * gameSettings.splashDamageMultiplier) / adjacentEnemies.length) : 0;
-                        adjacentEnemies.forEach(adjacentSlotIndex => {
-                            gameState.board[adjacentSlotIndex].enemy.hp -= splashDamage;
-                            if (gameState.board[adjacentSlotIndex].enemy.hp <= 0) {
-                                gameState.board[adjacentSlotIndex].empty = true;
-                                enemiesKilled++;
-                                handleBossSpawn();
-                            }
-                        });
+                    const adjacentSlots = gameSettings.adjacentSlots[slotIndex] || [];
+                    const adjacentEnemies = adjacentSlots.filter(index => gameState.board[index] && !gameState.board[index].empty);
+                    const splashDamage = adjacentEnemies.length > 0 ? Math.floor((baseDamage * gameSettings.splashDamageMultiplier) / adjacentEnemies.length) : 0;
+                    adjacentEnemies.forEach(adjacentSlotIndex => {
+                        const cell = gameState.board[adjacentSlotIndex];
+                        cell.enemy.hp -= splashDamage;
+                        showAttackEffect(adjacentSlotIndex, cardType);
+                        if (cell.enemy.hp <= 0) { cell.empty = true; enemiesKilled++; handleBossSpawn(); }
+                    });
+                    attackedSlot.enemy.hp -= baseDamage;
+                    showAttackEffect(slotIndex, cardType);
+                    if (attackedSlot.enemy.hp <= 0) { attackedSlot.empty = true; enemiesKilled++; handleBossSpawn(); }
                     break;
                 }
                 case '💀': {
-                        const targetEnemyType = attackedSlot.enemy.type;
-                        gameState.board.forEach(cell => {
-                            if (cell && !cell.empty && cell.enemy.type === targetEnemyType) {
-                                cell.enemy.hp -= baseDamage;
-                                if (cell.enemy.hp <= 0) {
-                                    cell.empty = true;
-                                    enemiesKilled++;
-                                    handleBossSpawn();
-                                }
-                            }
-                        });
+                    const targetEnemyType = attackedSlot.enemy.type;
+                    gameState.board.forEach((cell, index) => {
+                        if (cell && !cell.empty && cell.enemy.type === targetEnemyType) {
+                            cell.enemy.hp -= baseDamage;
+                            showAttackEffect(index, cardType);
+                            if (cell.enemy.hp <= 0) { cell.empty = true; enemiesKilled++; handleBossSpawn(); }
+                        }
+                    });
                     break;
                 }
                 case '🦠': {
-                        const targetEnemyType = attackedSlot.enemy.type;
-                        const adjacentSlots = gameSettings.adjacentSlots[slotIndex] || [];
-                        adjacentSlots.forEach(adjIndex => {
-                            if (gameState.board[adjIndex] && !gameState.board[adjIndex].empty) {
-                                gameState.board[adjIndex].enemy.type = targetEnemyType;
-                                gameState.board[adjIndex].enemy.hp -= Math.floor(baseDamage * 0.3);
-                                if (gameState.board[adjIndex].enemy.hp <= 0) {
-                                    gameState.board[adjIndex].empty = true;
-                                    enemiesKilled++;
-                                    handleBossSpawn();
-                                }
-                            }
-                        });
-                        attackedSlot.enemy.hp -= baseDamage;
-                        if (attackedSlot.enemy.hp <= 0) {
-                            attackedSlot.empty = true;
-                            enemiesKilled++;
-                            handleBossSpawn();
+                    const targetEnemyType = attackedSlot.enemy.type;
+                    const adjacentSlots = gameSettings.adjacentSlots[slotIndex] || [];
+                    adjacentSlots.forEach(adjIndex => {
+                        const cell = gameState.board[adjIndex];
+                        if (cell && !cell.empty) {
+                            cell.enemy.type = targetEnemyType;
+                            cell.enemy.hp -= Math.floor(baseDamage * 0.3);
+                            showAttackEffect(adjIndex, cardType);
+                            if (cell.enemy.hp <= 0) { cell.empty = true; enemiesKilled++; handleBossSpawn(); }
                         }
+                    });
+                    attackedSlot.enemy.hp -= baseDamage;
+                    showAttackEffect(slotIndex, cardType);
+                    if (attackedSlot.enemy.hp <= 0) { attackedSlot.empty = true; enemiesKilled++; handleBossSpawn(); }
                     break;
                 }
                 case '🌊': {
-                        gameState.board.forEach(cell => {
-                            if (cell && !cell.empty) {
-                                cell.enemy.hp -= baseDamage;
-                                if (cell.enemy.hp <= 0) {
-                                    cell.empty = true;
-                                    enemiesKilled++;
-                                    handleBossSpawn();
-                                }
-                            }
-                        });
+                    gameState.board.forEach((cell, index) => {
+                        if (cell && !cell.empty) {
+                            cell.enemy.hp -= baseDamage;
+                            showAttackEffect(index, cardType);
+                            if (cell.enemy.hp <= 0) { cell.empty = true; enemiesKilled++; handleBossSpawn(); }
+                        }
+                    });
                     break;
                 }
             }
-
-            if (cardType !== '⚡️' && cardType !== '💀' && cardType !== '🌊') {
-                attackedSlot.enemy.hp -= damage;
-                if (attackedSlot.enemy.hp <= 0) {
-                    attackedSlot.empty = true;
-                    enemiesKilled++;
-                    handleBossSpawn();
-                }
-            }
+            // ▲▲▲ 変更箇所 ▲▲▲
 
             updateMessageBoxUI('攻撃！');
-
             if (selectedIndex !== null) {
-                if (gameState.selectedCardIndex !== null) {
-                    gameState.hand[gameState.selectedCardIndex] = undefined;
-                    gameState.hand = gameState.hand.filter(card => card !== undefined);
-                } else if (gameState.selectedSpecialCardIndex !== null) {
-                    gameState.specialHand[gameState.selectedSpecialCardIndex] = null;
-                }
+                if (gameState.selectedCardIndex !== null) { gameState.hand.splice(gameState.selectedCardIndex, 1); } else if (gameState.selectedSpecialCardIndex !== null) { gameState.specialHand[gameState.selectedSpecialCardIndex] = null; }
             }
-
-            gameState.selectedCardIndex = null;
-            gameState.selectedSpecialCardIndex = null;
-            gameState.handSelectionEnabled = false;
-
-            domElements.handSlots.forEach(card => {
-                if (!card.classList.contains('opacity-30')) {
-                    card.classList.add('disabled');
-                }
-            });
-            domElements.specialHandSlots.forEach(card => {
-                if (!card.classList.contains('opacity-30')) {
-                    card.classList.add('disabled');
-                }
-            });
-
+            gameState.selectedCardIndex = null; gameState.selectedSpecialCardIndex = null; gameState.handSelectionEnabled = false;
+            domElements.handSlots.forEach(card => { if (!card.classList.contains('opacity-30')) { card.classList.add('disabled'); } });
+            domElements.specialHandSlots.forEach(card => { if (!card.classList.contains('opacity-30')) { card.classList.add('disabled'); } });
             gameState.killCount += enemiesKilled;
-            updateHandUI();
-            updateSpecialHandUI();
-            updateBoardUI();
-            handleExperience(enemiesKilled);
-            updateKillCountUI();
+            updateHandUI(); updateSpecialHandUI(); updateBoardUI(); handleExperience(enemiesKilled); updateKillCountUI();
 
             setTimeout(() => {
-
                 const cardsToDraw = Math.min(enemiesKilled, 5 - gameState.hand.length);
-                for (let i = 0; i < cardsToDraw; i++) {
-                    drawCard();
-                }
-
+                for (let i = 0; i < cardsToDraw; i++) { drawCard(); }
                 recordCurrentEmptySlots();
-
                 const isBoardCompletelyEmpty = gameState.board.every(cell => !cell || cell.empty);
-
-                if (isBoardCompletelyEmpty) {
-                    gameState.emptySlotsPreviousTurn = Array.from({ length: gameSettings.boardSize }, (_, i) => i);
-                    replenishEnemies();
-                    gameState.emptySlotsCurrentTurn = [];
-                } else {
-                    replenishEnemies();
-                    gameState.emptySlotsPreviousTurn = [...gameState.emptySlotsCurrentTurn];
-                    gameState.emptySlotsCurrentTurn = [];
-                }
-
+                if (isBoardCompletelyEmpty) { gameState.emptySlotsPreviousTurn = Array.from({ length: gameSettings.boardSize }, (_, i) => i); replenishEnemies(); gameState.emptySlotsCurrentTurn = []; } else { replenishEnemies(); gameState.emptySlotsPreviousTurn = [...gameState.emptySlotsCurrentTurn]; gameState.emptySlotsCurrentTurn = []; }
                 gameState.handSelectionEnabled = true;
-
-                domElements.handSlots.forEach(card => {
-                    card.classList.remove('disabled');
-                });
-                domElements.specialHandSlots.forEach(card => {
-                    card.classList.remove('disabled');
-                });
-
-                updateHandUI();
-                updateSpecialHandUI();
-                updateBoardUI();
-
-                updateMessageBoxUI('手札を選択してください');
-                
-                if (gameState.killCount >= gameSettings.killTarget) {
-                    gameState.gameOver = true;
-                    updateMessageBoxUI('ゲームクリア！');
-                    domElements.messageBox.classList.add('message-box-clear');
-                    endGame();
-                }
-
-                if (gameState.hand.length === 0 && gameState.specialHand.every(card => card === null) && gameState.board.some(cell => cell && !cell.empty)) {
-                    gameState.gameOver = true;
-                    updateMessageBoxUI('ゲームオーバー：手札がありません');
-                    domElements.messageBox.classList.add('message-box-gameover');
-                    endGame();
-                    return;
-                }
-
+                domElements.handSlots.forEach(card => { card.classList.remove('disabled'); });
+                domElements.specialHandSlots.forEach(card => { card.classList.remove('disabled'); });
+                updateHandUI(); updateSpecialHandUI(); updateBoardUI(); updateMessageBoxUI('手札を選択してください');
+                if (gameState.killCount >= gameSettings.killTarget) { gameState.gameOver = true; endGame(); } else if (gameState.hand.length === 0 && gameState.specialHand.every(card => card === null) && gameState.board.some(cell => cell && !cell.empty)) { gameState.gameOver = true; endGame(); return; }
             }, 400);
-
             gameState.handSelectionEnabled = true;
         }
 
+        function handleBossSpawn() { if (gameState.killCount >= gameState.forcePurpleEnemyCount) { gameState.forcePurpleEnemy = true; gameState.forcePurpleEnemyCount += gameState.forcePurpleEnemyThreshold; } }
+        function generateEnemyType() { if (gameState.forcePurpleEnemy) { gameState.forcePurpleEnemy = false; return '👿'; } else { let rand = Math.random(); let cumulativeProbability = 0; for (let i = 0; i < gameState.enemySpawnRates.length; i++) { cumulativeProbability += gameState.enemySpawnRates[i]; if (rand < cumulativeProbability) { return gameSettings.enemyTypes[i]; } } return gameSettings.enemyTypes[gameSettings.enemyTypes.length - 1]; } }
 
-        // ボス出現の判定
-        function handleBossSpawn() {
-            if (gameState.killCount >= gameState.forcePurpleEnemyCount) {
-                gameState.forcePurpleEnemy = true;
-                gameState.forcePurpleEnemyCount += gameState.forcePurpleEnemyThreshold;
-            }
-        }
-
-        // 敵の種類の生成
-        function generateEnemyType() {
-            if (gameState.forcePurpleEnemy) {
-                gameState.forcePurpleEnemy = false;
-                return '👿';
-            } else {
-                let rand = Math.random();
-                let cumulativeProbability = 0;
-                for (let i = 0; i < gameState.enemySpawnRates.length; i++) {
-                    cumulativeProbability += gameState.enemySpawnRates[i];
-                    if (rand < cumulativeProbability) {
-                        return gameSettings.enemyTypes[i];
-                    }
-                }
-                return gameSettings.enemyTypes[gameSettings.enemyTypes.length - 1];
-            }
-        }
-
-        // 経験値の処理
         function handleExperience(enemiesKilled) {
             const isBoardCompletelyEmpty = gameState.board.every(cell => !cell || cell.empty);
-
-            if (isBoardCompletelyEmpty) {
-                // 全滅時は固定ボーナス
-                gameState.expAdded = gameSettings.specialCardChargeThreshold;
-            } else {
-                // 通常時は計算
-                gameState.expAdded = (enemiesKilled * gameSettings.experiencePerKill) + (enemiesKilled > 0 ? (enemiesKilled - 1) * gameSettings.experienceChainBonus : 0);
-            }
-            
+            gameState.expAdded = isBoardCompletelyEmpty ? gameSettings.specialCardChargeThreshold : (enemiesKilled * gameSettings.experiencePerKill) + (enemiesKilled > 0 ? (enemiesKilled - 1) * gameSettings.experienceChainBonus : 0);
             gameState.playerXpTotal += gameState.expAdded;
             gameState.playerXp += gameState.expAdded;
             gameState.specialCardChargeCounter += gameState.expAdded;
-
-            if (gameState.killCount >= gameSettings.midGameRatesCount && !gameState.isMidGameRatesActive) {
-                gameState.enemySpawnRates = [...gameSettings.enemySpawnRatesMidGame];
-                gameState.isMidGameRatesActive = true;
-            } else if (gameState.killCount >= gameSettings.finalGameRatesCount && !gameState.isFinalGameRatesActive) {
-                gameState.enemySpawnRates = [...gameSettings.enemySpawnRatesFinalGame];
-                gameState.isFinalGameRatesActive = true;
-            }
-
-            while (gameState.playerXp >= gameSettings.levelUpThreshold) {
-                gameState.playerLevel++;
-                gameState.playerXp -= gameSettings.levelUpThreshold;
-            }
-
+            if (gameState.killCount >= gameSettings.midGameRatesCount && !gameState.isMidGameRatesActive) { gameState.enemySpawnRates = [...gameSettings.enemySpawnRatesMidGame]; gameState.isMidGameRatesActive = true; } else if (gameState.killCount >= gameSettings.finalGameRatesCount && !gameState.isFinalGameRatesActive) { gameState.enemySpawnRates = [...gameSettings.enemySpawnRatesFinalGame]; gameState.isFinalGameRatesActive = true; }
+            while (gameState.playerXp >= gameSettings.levelUpThreshold) { gameState.playerLevel++; gameState.playerXp -= gameSettings.levelUpThreshold; }
             gameState.expForNextLevel = gameState.playerXp % gameSettings.levelUpThreshold;
-
-            while (gameState.specialCardChargeCounter >= gameState.specialCardChargeAdd) {
-                gameState.specialCardChargeAdd += gameSettings.specialCardChargeThreshold;
-                addSpecialCardToHand();
-                updateSpecialHandUI();
-            }
+            while (gameState.specialCardChargeCounter >= gameState.specialCardChargeAdd) { gameState.specialCardChargeAdd += gameSettings.specialCardChargeThreshold; addSpecialCardToHand(); updateSpecialHandUI(); }
         }
 
-        function addSpecialCardToHand() {
-            const emptySlotIndex = gameState.specialHand.findIndex(card => card === null);
-            if (emptySlotIndex !== -1) {
-                const randomCardType = gameSettings.specialCardTypes[Math.floor(Math.random() * gameSettings.specialCardTypes.length)];
-                gameState.specialHand[emptySlotIndex] = randomCardType;
-            }
-        }
+        function addSpecialCardToHand() { const emptySlotIndex = gameState.specialHand.findIndex(card => card === null); if (emptySlotIndex !== -1) { const randomCardType = gameSettings.specialCardTypes[Math.floor(Math.random() * gameSettings.specialCardTypes.length)]; gameState.specialHand[emptySlotIndex] = randomCardType; } }
 
-        // ゲーム終了処理
         function endGame() {
             domElements.handContainer.classList.add('disabled-overlay');
             domElements.boardContainer.classList.add('disabled-overlay');
             domElements.specialHandContainer.classList.add('disabled-overlay');
+            const normalCardCount = gameState.hand.length;
+            const specialCardCount = gameState.specialHand.filter(card => card !== null).length;
+            const score = gameState.playerXpTotal + (normalCardCount * 30) + (specialCardCount * 100);
+            saveHighScore(score);
+            const isClear = gameState.killCount >= gameSettings.killTarget;
+            if (isClear) { updateMessageBoxUI(`ゲームクリア！ Score: ${score}`); domElements.messageBox.classList.add('message-box-clear'); } else { updateMessageBoxUI(`ゲームオーバー Score: ${score}`); domElements.messageBox.classList.add('message-box-gameover'); }
         }
         
-        // ゲームリセット処理
         function resetGame() {
             domElements.handContainer.classList.remove('disabled-overlay');
             domElements.boardContainer.classList.remove('disabled-overlay');
             domElements.specialHandContainer.classList.remove('disabled-overlay');
             domElements.messageBox.classList.remove('message-box-clear', 'message-box-gameover');
-
-            // 現在の難易度設定を再適用
-            applyDifficultySettings(gameState.difficulty);
             initializeGame();
         }
 
-        // リセットボタンにイベントリスナーを追加
         document.getElementById('reset-button').addEventListener('click', resetGame);
         
-        // ▼▼▼ 設定モーダルのロジック ▼▼▼
-        const settingsModal = document.getElementById('settings-modal');
-        const openSettingsButton = document.getElementById('settings-button');
-        const cancelButton = document.getElementById('cancel-button');
-        const confirmButton = document.getElementById('confirm-button');
-        const modalOverlay = document.getElementById('modal-overlay');
-        const difficultyButtons = document.querySelectorAll('.difficulty-button');
-        const endlessModeButton = document.getElementById('endless-mode-button');
-
-        let tempDifficulty;
-        let tempIsEndlessMode;
-
-        function updateDifficultyButtonsUI() {
-            difficultyButtons.forEach(button => {
-                if (button.dataset.difficulty === tempDifficulty) {
-                    button.classList.add('scale-110');
-                    button.classList.remove('scale-90', 'opacity-75');
-                } else {
-                    button.classList.add('scale-90', 'opacity-75');
-                    button.classList.remove('scale-110');
-                }
-            });
-        }
-
-        function updateEndlessModeButtonUI() {
-            if (tempIsEndlessMode) {
-                endlessModeButton.textContent = 'エンドレスモード: ON';
-                endlessModeButton.classList.replace('bg-purple-800', 'bg-purple-600');
-            } else {
-                endlessModeButton.textContent = 'エンドレスモード: OFF';
-                endlessModeButton.classList.replace('bg-purple-600', 'bg-purple-800');
-            }
-        }
-
-        function openModal() {
-            tempDifficulty = gameState.difficulty;
-            tempIsEndlessMode = gameState.isEndlessMode;
-            updateDifficultyButtonsUI();
-            updateEndlessModeButtonUI();
-            settingsModal.classList.remove('hidden');
-        }
-
-        function closeModal() {
-            settingsModal.classList.add('hidden');
-        }
-
-        difficultyButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                tempDifficulty = button.dataset.difficulty;
-                updateDifficultyButtonsUI();
-            });
-        });
-
-        endlessModeButton.addEventListener('click', () => {
-            tempIsEndlessMode = !tempIsEndlessMode;
-            updateEndlessModeButtonUI();
-        });
-
+        const settingsModal = document.getElementById('settings-modal'), openSettingsButton = document.getElementById('settings-button'), cancelButton = document.getElementById('cancel-button'), confirmButton = document.getElementById('confirm-button'), modalOverlay = document.getElementById('modal-overlay'), difficultyButtons = document.querySelectorAll('.difficulty-button'), endlessModeButton = document.getElementById('endless-mode-button');
+        let tempDifficulty, tempIsEndlessMode;
+        function updateDifficultyButtonsUI() { difficultyButtons.forEach(button => { if (button.dataset.difficulty === tempDifficulty) { button.classList.add('scale-110'); button.classList.remove('scale-90', 'opacity-75'); } else { button.classList.add('scale-90', 'opacity-75'); button.classList.remove('scale-110'); } }); }
+        function updateEndlessModeButtonUI() { if (tempIsEndlessMode) { endlessModeButton.textContent = 'エンドレスモード: ON'; endlessModeButton.classList.replace('bg-purple-800', 'bg-purple-600'); } else { endlessModeButton.textContent = 'エンドレスモード: OFF'; endlessModeButton.classList.replace('bg-purple-600', 'bg-purple-800'); } }
+        function openModal() { tempDifficulty = gameState.difficulty; tempIsEndlessMode = gameState.isEndlessMode; updateDifficultyButtonsUI(); updateEndlessModeButtonUI(); settingsModal.classList.remove('hidden'); }
+        function closeModal() { settingsModal.classList.add('hidden'); }
+        difficultyButtons.forEach(button => { button.addEventListener('click', () => { tempDifficulty = button.dataset.difficulty; updateDifficultyButtonsUI(); }); });
+        endlessModeButton.addEventListener('click', () => { tempIsEndlessMode = !tempIsEndlessMode; updateEndlessModeButtonUI(); });
         openSettingsButton.addEventListener('click', openModal);
         cancelButton.addEventListener('click', closeModal);
         modalOverlay.addEventListener('click', closeModal);
-
-        confirmButton.addEventListener('click', () => {
-            const difficultyChanged = gameState.difficulty !== tempDifficulty;
-            const endlessModeChanged = gameState.isEndlessMode !== tempIsEndlessMode;
-
-            if (difficultyChanged || endlessModeChanged) {
-                gameState.difficulty = tempDifficulty;
-                gameState.isEndlessMode = tempIsEndlessMode;
-                applyDifficultySettings(gameState.difficulty);
-                resetGame();
-            }
-            closeModal();
-        });
+        confirmButton.addEventListener('click', () => { const difficultyChanged = gameState.difficulty !== tempDifficulty; const endlessModeChanged = gameState.isEndlessMode !== tempIsEndlessMode; if (difficultyChanged || endlessModeChanged) { gameState.difficulty = tempDifficulty; gameState.isEndlessMode = tempIsEndlessMode; resetGame(); } closeModal(); });
         
-        // ▼▼▼ ゲームの初回開始処理 ▼▼▼
-        applyDifficultySettings(gameState.difficulty);
         initializeGame();
         
     </script>
