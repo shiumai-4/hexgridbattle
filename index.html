@@ -54,7 +54,7 @@
 
         .attack-effect {
             position: absolute;
-            top: 50%;
+            top: 35%;
             left: 50%;
             width: 40px;
             height: 40px;
@@ -65,14 +65,14 @@
 
         @keyframes attack-animation {
             0% {
-                transform: translate(-50%, -50%) scale(0) rotate(0deg);
-                opacity: 0;
+                transform: translate(0%, 0%) scale(0.5) rotate(-180deg);
+                opacity: 0,5;
             }
             50% {
-                opacity: 0.5;
+                opacity: 0.9;
             }
             100% {
-                transform: translate(-50%, -50%) scale(1) rotate(360deg);
+                transform: translate(-50%, -50%) scale(1.2) rotate(0deg);
                 opacity: 0;
             }
         }
@@ -192,7 +192,7 @@
     </div>
 
     <div class="mt-4 flex justify-center items-center">
-        <button id="reset-button" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded mr-2">リセット</button>
+        <button id="reset-button" class="bg-red-900 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-full mr-5">リセット</button>
         <button id="settings-button" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded">設定</button>
         <div class="ml-4 flex space-x-2">
             <div id="difficulty-indicator" class="w-4 h-4 rounded-full transition-colors" title="現在の難易度"></div>
@@ -209,18 +209,20 @@
             <div class="mb-5">
                 <h3 class="text-lg mb-2">難易度</h3>
                 <div class="flex justify-center space-x-2">
-                    <button data-difficulty="easy" class="difficulty-button bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-28 transition-transform duration-200">イージー</button>
-                    <button data-difficulty="normal" class="difficulty-button bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded w-28 transition-transform duration-200">ノーマル</button>
-                    <button data-difficulty="hard" class="difficulty-button bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded w-28 transition-transform duration-200">ハード</button>
+                    <button data-difficulty="easy" class="difficulty-button bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-28 transition-transform duration-200">easy</button>
+                    <button data-difficulty="normal" class="difficulty-button bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded w-28 transition-transform duration-200">normal</button>
+                    <button data-difficulty="hard" class="difficulty-button bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded w-28 transition-transform duration-200">hard</button>
+                    <button data-difficulty="nightmare" class="difficulty-button bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded w-28 transition-transform duration-200">nightmare</button>
+                    <button data-difficulty="impossible" class="difficulty-button bg-gray-200 hover:bg-gray-200 text-gray-900 font-bold py-2 px-4 rounded w-28 transition-transform duration-200">impossible</button>
                     </div>
             </div>
 
             <div class="mb-8">
-                <h3 class="text-lg mb-2">モード</h3>
-                <button id="endless-mode-button" class="w-full bg-purple-800 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded transition-colors">エンドレスモード: OFF</button>
+                <h3 class="text-lg mb-2">エンドレスモード</h3>
+                <button id="endless-mode-button" class="bg-purple-700 hover:bg-purple-800 text-white font-bold py-2 px-4 rounded transition-colors">OFF</button>
             </div>
 
-            <div class="flex justify-end space-x-4">
+            <div class="flex justify-center space-x-4">
                 <button id="cancel-button" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">キャンセル</button>
                 <button id="confirm-button" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">決定</button>
             </div>
@@ -233,8 +235,8 @@
             initialHandSize: 5,
             boardSize: 19,
             cardTypes: ['⚡️', '🗡️', '💥'],
-            enemyTypes: ['🔥', '💧', '☀️', '🌱', '👿'],
-            enemyHpValues: {'🔥': 15,'💧': 8,'☀️': 15,'🌱': 20,'👿': 150},
+            enemyTypes: ['🔥', '💧', '☀️', '🌱', '🪽', '👿'],
+            enemyHpValues: {'🔥': 15,'💧': 8,'☀️': 15,'🌱': 20,'🪽': 40,'👿': 150},
             // ▼▼▼ 変更箇所 ▼▼▼
             attackEffectImages: {
                 '⚡️': 'https://github.com/shiumai-4/hexgridbattle/blob/main/thunder.PNG?raw=true',
@@ -292,29 +294,47 @@
             difficultySettings: {
                 easy: {
                     killTarget: 100,
-                    enemySpawnRatesInitial: [0.4, 0.6, 0, 0, 0],
+                    enemySpawnRatesInitial: [0.4, 0.6, 0, 0, 0, 0],
                     midGameRatesCount: 35,
-                    enemySpawnRatesMidGame: [0.4, 0.5, 0, 0.1, 0],
+                    enemySpawnRatesMidGame: [0.4, 0.5, 0, 0.1, 0, 0],
                     finalGameRatesCount: 80,
-                    enemySpawnRatesFinalGame: [0.3, 0.5, 0, 0.2, 0],
+                    enemySpawnRatesFinalGame: [0.3, 0.5, 0, 0.2, 0, 0],
                     bossThresholdInitial: 80,
                 },
                 normal: {
                     killTarget: 150,
-                    enemySpawnRatesInitial: [0.4, 0.5, 0.1, 0, 0],
+                    enemySpawnRatesInitial: [0.4, 0.5, 0.1, 0, 0, 0],
                     midGameRatesCount: 35,
-                    enemySpawnRatesMidGame: [0.35, 0.45, 0, 0.2, 0],
+                    enemySpawnRatesMidGame: [0.35, 0.45, 0, 0.2, 0, 0],
                     finalGameRatesCount: 100,
-                    enemySpawnRatesFinalGame: [0.25, 0.25, 0.25, 0.25, 0],
+                    enemySpawnRatesFinalGame: [0.25, 0.25, 0.25, 0.25, 0, 0],
                     bossThresholdInitial: 50,
                 },
                 hard: {
                     killTarget: 250,
-                    enemySpawnRatesInitial: [0.4, 0.5, 0.1, 0, 0],
+                    enemySpawnRatesInitial: [0.4, 0.5, 0.1, 0, 0, 0],
                     midGameRatesCount: 35,
-                    enemySpawnRatesMidGame: [0.35, 0.45, 0, 0.2, 0],
+                    enemySpawnRatesMidGame: [0.35, 0.45, 0, 0.2, 0, 0],
                     finalGameRatesCount: 125,
-                    enemySpawnRatesFinalGame: [0.25, 0.25, 0.25, 0.25, 0],
+                    enemySpawnRatesFinalGame: [0.25, 0.25, 0.25, 0.25, 0, 0],
+                    bossThresholdInitial: 50,
+                },
+                nightmare: {
+                    killTarget: 200,
+                    enemySpawnRatesInitial: [0.4, 0.5, 0.1, 0, 0, 0],
+                    midGameRatesCount: 35,
+                    enemySpawnRatesMidGame: [0.25, 0.4, 0.1, 0.2, 0.05, 0],
+                    finalGameRatesCount: 125,
+                    enemySpawnRatesFinalGame: [0.25, 0.25, 0.2, 0.2, 0.1, 0],
+                    bossThresholdInitial: 50,
+                },
+                impossible: {
+                    killTarget: 250,
+                    enemySpawnRatesInitial: [0.3, 0.5, 0.1, 0, 0.1, 0],
+                    midGameRatesCount: 35,
+                    enemySpawnRatesMidGame: [0.3, 0.4, 0.1, 0.1, 0.1, 0],
+                    finalGameRatesCount: 125,
+                    enemySpawnRatesFinalGame: [0.2, 0.2, 0.2, 0.2, 0.2, 0],
                     bossThresholdInitial: 50,
                 }
             }
@@ -334,7 +354,7 @@
         }
 
         function generateExplanationText() {
-            return `【ヘックスグリッドバトル】\n\n**目標**\n　敵を合計${gameSettings.killTarget === Infinity ? '∞' : gameSettings.killTarget}体倒すとゲームクリアです！\n\n**ゲームの基本的な流れ**\n1.  **ターン開始**: 前のターンに空になったマスに敵が補充されます。\n2.  **カード選択**: 手札から攻撃に使いたいカードを1枚選びます。\n3.  **攻撃対象選択**: ボード上の敵がいるマスをクリックして攻撃します。\n4.  **攻撃実行**: 選んだカードの効果で敵にダメージを与えます。敵のHPが0になると倒されます。\n5.  **カード補充と成長**: 敵を倒すと新しいカードが手札に補充されます。\n　　倒した敵の数に応じて経験値が得られ、レベルアップすると攻撃力が上がります。\n　　敵を同時に倒すと経験値ボーナス！\n\n**カードの種類と効果**\n* **通常カード**:\n    * ⚡️ (電撃)：隣接する同じ種類の敵に連鎖ダメージを与えます。\n    * 🗡️ (斬撃)：敵の最大HPの1/5の追加ダメージを与えます。\n    * 💥 (爆発)：周囲の敵の数に応じて分散ダメージを与えます。\n* **スペシャルカード**: 経験値を獲得することでチャージされ、手札に追加されます。\n    * 💀 (呪縛)：全ての同じ種類の敵に呪縛ダメージを与えます。\n    * 🦠 (感染)：隣接する敵を同じ種類に変化させ感染ダメージを与えます。\n    * 🌊 (津波)：全ての敵に津波ダメージを与えます。\n\n**敵について**\n　敵には🔥、💧、☀️、🌱、👿の5種類がいます。\n　敵は倒すごとに強くなって補充されます。\n　特定の討伐数に達すると、より強力なボス敵（👿）が強制的に出現することがあります。\n\n**ゲームオーバー**\n　手札が全てなくなると、ゲームオーバーとなります。\n`;
+            return `【ヘックスグリッドバトル】\n\n**目標**\n　敵を合計${gameSettings.killTarget === Infinity ? '∞' : gameSettings.killTarget}体倒すとゲームクリアです！\n\n**ゲームの基本的な流れ**\n1.  **ターン開始**: 前のターンに空になったマスに敵が補充されます。\n2.  **カード選択**: 手札から攻撃に使いたいカードを1枚選びます。\n3.  **攻撃対象選択**: ボード上の敵がいるマスをクリックして攻撃します。\n4.  **攻撃実行**: 選んだカードの効果で敵にダメージを与えます。敵のHPが0になると倒されます。\n5.  **カード補充と成長**: 敵を倒すと新しいカードが手札に補充されます。\n　　倒した敵の数に応じて経験値が得られ、レベルアップすると攻撃力が上がります。\n　　敵を同時に倒すと経験値ボーナス！\n\n**カードの種類と効果**\n* **通常カード**:\n    * ⚡️ (電撃)：隣接する同じ種類の敵に連鎖ダメージを与えます。\n    * 🗡️ (斬撃)：敵の最大HPの1/5の追加ダメージを与えます。\n    * 💥 (爆発)：周囲の敵の数に応じて分散ダメージを与えます。\n* **スペシャルカード**: 経験値を獲得することでチャージされ、手札に追加されます。\n    * 💀 (呪縛)：全ての同じ種類の敵に呪縛ダメージを与えます。\n    * 🦠 (感染)：隣接する敵を同じ種類に変化させ感染ダメージを与えます。\n    * 🌊 (津波)：全ての敵に津波ダメージを与えます。\n\n**敵について**\n　敵には🔥、💧、☀️、🌱、🪽、👿の6種類がいます。\n　敵は倒すごとに強くなって補充されます。\n　特定の討伐数に達すると、より強力なボス敵（👿）が強制的に出現することがあります。\n\n**ゲームオーバー**\n　手札が全てなくなると、ゲームオーバーとなります。\n`;
         }
         
         function getHighScoreKey() { return `hex-grid-battle-highscore-${gameState.difficulty}-${gameState.isEndlessMode ? 'on' : 'off'}`; }
@@ -349,24 +369,26 @@
                 case 'easy': domElements.difficultyIndicator.classList.add('bg-blue-600'); break;
                 case 'normal': domElements.difficultyIndicator.classList.add('bg-yellow-500'); break;
                 case 'hard': domElements.difficultyIndicator.classList.add('bg-red-600'); break;
+                case 'nightmare': domElements.difficultyIndicator.classList.add('bg-purple-600'); break;
+                case 'impossible': domElements.difficultyIndicator.classList.add('bg-gray-200'); break;
             }
-            if (gameState.isEndlessMode) { domElements.endlessModeIndicator.classList.add('bg-purple-600'); } else { domElements.endlessModeIndicator.classList.add('bg-purple-800'); }
+            if (gameState.isEndlessMode) { domElements.endlessModeIndicator.classList.add('bg-purple-600'); } else { domElements.endlessModeIndicator.classList.add('bg-purple-300'); }
         }
 
         // ▼▼▼ 変更箇所 ▼▼▼
         function showAttackEffect(slotIndex, cardType) {
             const imageUrl = gameSettings.attackEffectImages[cardType];
             if (!imageUrl) return;
-
+            
             const cellElement = document.querySelector(`.hex-cell[data-slot-index="${slotIndex}"]`);
             if (!cellElement) return;
-
+            
             const effectImage = document.createElement('img');
             effectImage.src = imageUrl;
             effectImage.className = 'attack-effect';
-
+            
             cellElement.appendChild(effectImage);
-
+            
             setTimeout(() => {
                 if (cellElement.contains(effectImage)) {
                     cellElement.removeChild(effectImage);
@@ -409,7 +431,7 @@
 
         function recordCurrentEmptySlots() { gameState.emptySlotsCurrentTurn = gameState.board.reduce((acc, cell, index) => { if (!cell || cell.empty) { acc.push(index); } return acc; }, []); }
         function drawCard() { if (gameState.hand.length < 5) { const randomCardType = gameSettings.cardTypes[Math.floor(Math.random() * gameSettings.cardTypes.length)]; gameState.hand.push(randomCardType); } }
-        function spawnEnemy(slotIndex) { const enemyType = generateEnemyType(); gameState.bossExtraHpTimes = (enemyType === '👿') ? 2 : 0; const newHp = gameSettings.enemyHpValues[enemyType] + Math.floor(gameState.killCount / 5) * 3 + gameState.playerLevel * gameState.bossExtraHpTimes; gameState.board[slotIndex] = { enemy: { type: enemyType, hp: newHp, maxHp: newHp }, empty: false }; }
+        function spawnEnemy(slotIndex) { const enemyType = generateEnemyType(); gameState.bossExtraHpTimes = (enemyType === '👿') ? 2 : 0; const newHp = gameSettings.enemyHpValues[enemyType] + Math.floor(gameState.killCount / 5) * 3 + Math.floor(gameState.killCount * 2) / 10 + gameState.playerLevel * gameState.bossExtraHpTimes; gameState.board[slotIndex] = { enemy: { type: enemyType, hp: newHp, maxHp: newHp }, empty: false }; }
         function handleHandClick(event) { if (!gameState.handSelectionEnabled || gameState.gameOver) return; const cardElement = event.target.closest('.card'); if (cardElement) { const cardIndex = parseInt(cardElement.dataset.cardIndex); if (gameState.hand[cardIndex] !== undefined) { selectCard(cardIndex); } } }
         function handleBoardClick(event) { if (gameState.selectedCardIndex === null && gameState.selectedSpecialCardIndex === null || gameState.gameOver) return; const hexCell = event.target.closest('.hex-cell'); if (hexCell) { const slotIndex = parseInt(hexCell.dataset.slotIndex); attack(slotIndex); } }
         function handleSpecialHandClick(event) { if (gameState.gameOver) return; const cardElement = event.target.closest('.special-card'); if (cardElement) { const cardIndex = parseInt(cardElement.dataset.specialCardIndex); if (gameState.specialHand[cardIndex]) { selectCard(cardIndex + 5); } } }
@@ -456,6 +478,7 @@
                         case '💧': cellInner.classList.add('bg-blue-500'); break;
                         case '☀️': cellInner.classList.add('bg-yellow-500'); break;
                         case '🌱': cellInner.classList.add('bg-green-500'); break;
+                        case '🪽': cellInner.classList.add('bg-gray-700'); break;
                         case '👿': cellInner.classList.add('bg-purple-500'); break;
                     }
                 } else { cellInner.classList.add('bg-gray-400'); cellInner.textContent = 'Empty'; }
@@ -653,7 +676,7 @@
         const settingsModal = document.getElementById('settings-modal'), openSettingsButton = document.getElementById('settings-button'), cancelButton = document.getElementById('cancel-button'), confirmButton = document.getElementById('confirm-button'), modalOverlay = document.getElementById('modal-overlay'), difficultyButtons = document.querySelectorAll('.difficulty-button'), endlessModeButton = document.getElementById('endless-mode-button');
         let tempDifficulty, tempIsEndlessMode;
         function updateDifficultyButtonsUI() { difficultyButtons.forEach(button => { if (button.dataset.difficulty === tempDifficulty) { button.classList.add('scale-110'); button.classList.remove('scale-90', 'opacity-75'); } else { button.classList.add('scale-90', 'opacity-75'); button.classList.remove('scale-110'); } }); }
-        function updateEndlessModeButtonUI() { if (tempIsEndlessMode) { endlessModeButton.textContent = 'エンドレスモード: ON'; endlessModeButton.classList.replace('bg-purple-800', 'bg-purple-600'); } else { endlessModeButton.textContent = 'エンドレスモード: OFF'; endlessModeButton.classList.replace('bg-purple-600', 'bg-purple-800'); } }
+        function updateEndlessModeButtonUI() { if (tempIsEndlessMode) { endlessModeButton.textContent = 'ON'; endlessModeButton.classList.replace('bg-purple-400', 'bg-purple-700'); } else { endlessModeButton.textContent = 'OFF'; endlessModeButton.classList.replace('bg-purple-700', 'bg-purple-400'); } }
         function openModal() { tempDifficulty = gameState.difficulty; tempIsEndlessMode = gameState.isEndlessMode; updateDifficultyButtonsUI(); updateEndlessModeButtonUI(); settingsModal.classList.remove('hidden'); }
         function closeModal() { settingsModal.classList.add('hidden'); }
         difficultyButtons.forEach(button => { button.addEventListener('click', () => { tempDifficulty = button.dataset.difficulty; updateDifficultyButtonsUI(); }); });
