@@ -65,14 +65,14 @@
 
         @keyframes attack-animation {
             0% {
-                transform: translate(0%, 0%) scale(0.5) rotate(-180deg);
+                transform: translate(-50%, -50%) scale(0.5) rotate(160deg);
                 opacity: 0,5;
             }
             50% {
                 opacity: 0.9;
             }
             100% {
-                transform: translate(-50%, -50%) scale(1.2) rotate(0deg);
+                transform: translate(-50%, -50%) scale(1.2) rotate(-20deg);
                 opacity: 0;
             }
         }
@@ -82,10 +82,12 @@
             body {
                 justify-content: flex-start;
                 padding: 1rem 0;
+                margin-top: 10rem;
             }
             #game-container {
                 flex-direction: column;
                 width: 100%;
+                padding-top: 4rem;
                 padding: 0 1rem;
             }
             /* #top-right-ui を display:contents から除外して、それ自体を並び替えの対象にする */
@@ -110,16 +112,17 @@
             #message-box { order: 1; }
             #board-container { order: 2; }
             #hand-container { order: 3; }
-            #card-description { order: 4; }
 
             /* #top-right-ui (情報ボックスとSPカードの親) を5番目に配置 */
             #top-right-ui {
-                order: 5;
+                order: 4;
                 width: 100%;
                 max-width: 100%;
                 margin-bottom: 1rem;
                 justify-content: center; /* 中身を中央に配置 */
             }
+
+            #card-description { order: 5; }
 
             #game-explanation {
                 order: 6; /* ルール説明を6番目に */
@@ -191,7 +194,7 @@
         </div>
     </div>
 
-    <div class="mt-4 flex justify-center items-center">
+    <div class="flex justify-center items-center">
         <button id="reset-button" class="bg-red-900 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-full mr-5">リセット</button>
         <button id="settings-button" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded">設定</button>
         <div class="ml-4 flex space-x-2">
@@ -208,7 +211,7 @@
             
             <div class="mb-5">
                 <h3 class="text-lg mb-2">難易度</h3>
-                <div class="flex justify-center space-x-2">
+                <div class="flex justify-center flex-wrap gap-2">
                     <button data-difficulty="easy" class="difficulty-button bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-28 transition-transform duration-200">easy</button>
                     <button data-difficulty="normal" class="difficulty-button bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded w-28 transition-transform duration-200">normal</button>
                     <button data-difficulty="hard" class="difficulty-button bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded w-28 transition-transform duration-200">hard</button>
@@ -354,7 +357,36 @@
         }
 
         function generateExplanationText() {
-            return `【ヘックスグリッドバトル】\n\n**目標**\n　敵を合計${gameSettings.killTarget === Infinity ? '∞' : gameSettings.killTarget}体倒すとゲームクリアです！\n\n**ゲームの基本的な流れ**\n1.  **ターン開始**: 前のターンに空になったマスに敵が補充されます。\n2.  **カード選択**: 手札から攻撃に使いたいカードを1枚選びます。\n3.  **攻撃対象選択**: ボード上の敵がいるマスをクリックして攻撃します。\n4.  **攻撃実行**: 選んだカードの効果で敵にダメージを与えます。敵のHPが0になると倒されます。\n5.  **カード補充と成長**: 敵を倒すと新しいカードが手札に補充されます。\n　　倒した敵の数に応じて経験値が得られ、レベルアップすると攻撃力が上がります。\n　　敵を同時に倒すと経験値ボーナス！\n\n**カードの種類と効果**\n* **通常カード**:\n    * ⚡️ (電撃)：隣接する同じ種類の敵に連鎖ダメージを与えます。\n    * 🗡️ (斬撃)：敵の最大HPの1/5の追加ダメージを与えます。\n    * 💥 (爆発)：周囲の敵の数に応じて分散ダメージを与えます。\n* **スペシャルカード**: 経験値を獲得することでチャージされ、手札に追加されます。\n    * 💀 (呪縛)：全ての同じ種類の敵に呪縛ダメージを与えます。\n    * 🦠 (感染)：隣接する敵を同じ種類に変化させ感染ダメージを与えます。\n    * 🌊 (津波)：全ての敵に津波ダメージを与えます。\n\n**敵について**\n　敵には🔥、💧、☀️、🌱、🪽、👿の6種類がいます。\n　敵は倒すごとに強くなって補充されます。\n　特定の討伐数に達すると、より強力なボス敵（👿）が強制的に出現することがあります。\n\n**ゲームオーバー**\n　手札が全てなくなると、ゲームオーバーとなります。\n`;
+            return `【ヘックスグリッド戦略ガイド】
+
+■ 目的
+次々と現れる敵を倒し、目標討伐数を目指すのが君のミッションだ！
+設定で「エンドレスモード」をONにすれば、己の限界に挑むハイスコアチャレンジも可能だ。
+
+■ 基本戦術サイクル
+ゲームはシンプルな3ステップの繰り返しだ。
+1. 【選択】手札のカードから、状況に最適な1枚を選ぶ。
+2. 【攻撃】盤上の敵をクリックし、カードの力で攻撃！
+3. 【補充】敵を倒したマスには、新たな敵が補充される。常に次の手を考えよう。
+
+■ 通常カードの使いこなし術
+カードの特性を理解し、戦況を有利に進めよう。
+・⚡️ (電撃): 同じ種類の敵が隣接していると連鎖ダメージ！敵が隣接している場合は最大のチャンスだ。
+・🗡️ (斬撃): 敵の最大HPに応じてダメージが増加する。体力自慢のタフな敵にこそ真価を発揮する。
+・💥 (爆発): 周囲の敵に追加ダメージ！隣接した敵の数に応じて分散ダメージを与える。
+
+■ 一発逆転のスペシャルカード
+経験値を貯めるとチャージされる必殺技。使いどころが勝利の鍵だ。
+・💀 (呪縛): ターゲットと同じ種類の敵すべてを攻撃。特定の敵を一掃したい時に使おう。
+・🦠 (感染): 周囲の敵をターゲットと同じ種類に変化させてダメージ。意図的に電撃(⚡️)コンボの起点を作り出せる。
+・🌊 (津波): 盤上のすべての敵に大ダメージ！絶対的なピンチや、最後の一押しに最適だ。
+
+■ 敵について
+敵は倒されるたびに強くなって復活する。さらに、特定の討伐数に達すると、非常に強力なボス(👿)が出現する。心して挑め！
+
+■ 成長とゲームオーバー
+・敵を倒すと経験値を獲得し、レベルアップすると君の基本攻撃力が上昇する。同時撃破ボーナスを狙おう！
+・手札がすべて無くなるとゲームオーバー。一手一手を大切に。`;
         }
         
         function getHighScoreKey() { return `hex-grid-battle-highscore-${gameState.difficulty}-${gameState.isEndlessMode ? 'on' : 'off'}`; }
@@ -395,9 +427,22 @@
                 }
             }, 400);
         }
+
+        function preloadAttackImages() {
+            // gameSettingsからエフェクト画像のURLをすべて取得
+            const imageUrls = Object.values(gameSettings.attackEffectImages);
+            
+            // 各URLに対してImageオブジェクトを作成し、読み込みを開始させる
+            imageUrls.forEach(url => {
+                const img = new Image();
+                img.src = url;
+            });
+        }
         // ▲▲▲ 変更箇所 ▲▲▲
 
         function initializeGame() {
+            preloadAttackImages();
+            
             applyDifficultySettings(gameState.difficulty);
             if (gameState.isEndlessMode) { gameSettings.killTarget = Infinity; }
             Object.assign(gameState, { hand: [], board: [], selectedCardIndex: null, selectedSpecialCardIndex: null, killCount: 0, gameOver: false, handSelectionEnabled: true, playerLevel: 1, playerXp: 0, playerXpTotal: 0, expForNextLevel: 0, expAdded: 0, specialCardChargeCounter: 0, specialCardChargeAdd: 400, emptySlotsPreviousTurn: [], emptySlotsCurrentTurn: [], specialHand: [null, null], enemySpawnRates: [...gameSettings.enemySpawnRatesInitial], forcePurpleEnemyCount: gameSettings.bossThresholdInitial, forcePurpleEnemyThreshold: gameSettings.bossThresholdIncrement, isMidGameRatesActive: false, isFinalGameRatesActive: false, forcePurpleEnemy: false, bossExtraHpTimes: 0 });
@@ -431,7 +476,7 @@
 
         function recordCurrentEmptySlots() { gameState.emptySlotsCurrentTurn = gameState.board.reduce((acc, cell, index) => { if (!cell || cell.empty) { acc.push(index); } return acc; }, []); }
         function drawCard() { if (gameState.hand.length < 5) { const randomCardType = gameSettings.cardTypes[Math.floor(Math.random() * gameSettings.cardTypes.length)]; gameState.hand.push(randomCardType); } }
-        function spawnEnemy(slotIndex) { const enemyType = generateEnemyType(); gameState.bossExtraHpTimes = (enemyType === '👿') ? 2 : 0; const newHp = gameSettings.enemyHpValues[enemyType] + Math.floor(gameState.killCount / 5) * 3 + Math.floor(gameState.killCount * 2) / 10 + gameState.playerLevel * gameState.bossExtraHpTimes; gameState.board[slotIndex] = { enemy: { type: enemyType, hp: newHp, maxHp: newHp }, empty: false }; }
+        function spawnEnemy(slotIndex) { const enemyType = generateEnemyType(); gameState.bossExtraHpTimes = (enemyType === '👿') ? 2 : 0; const newHp = gameSettings.enemyHpValues[enemyType] + Math.floor(gameState.killCount / 5) * 3 + Math.floor(gameState.killCount * 2 / 10) + gameState.playerLevel * gameState.bossExtraHpTimes; gameState.board[slotIndex] = { enemy: { type: enemyType, hp: newHp, maxHp: newHp }, empty: false }; }
         function handleHandClick(event) { if (!gameState.handSelectionEnabled || gameState.gameOver) return; const cardElement = event.target.closest('.card'); if (cardElement) { const cardIndex = parseInt(cardElement.dataset.cardIndex); if (gameState.hand[cardIndex] !== undefined) { selectCard(cardIndex); } } }
         function handleBoardClick(event) { if (gameState.selectedCardIndex === null && gameState.selectedSpecialCardIndex === null || gameState.gameOver) return; const hexCell = event.target.closest('.hex-cell'); if (hexCell) { const slotIndex = parseInt(hexCell.dataset.slotIndex); attack(slotIndex); } }
         function handleSpecialHandClick(event) { if (gameState.gameOver) return; const cardElement = event.target.closest('.special-card'); if (cardElement) { const cardIndex = parseInt(cardElement.dataset.specialCardIndex); if (gameState.specialHand[cardIndex]) { selectCard(cardIndex + 5); } } }
