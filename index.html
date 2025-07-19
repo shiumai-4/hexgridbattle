@@ -6,16 +6,11 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {font-family: 'Arial', sans-serif;margin: 0;padding: 0;background-color: #111827;color: #f9fafb;display: flex;justify-content: center;align-items: center;min-height: 100vh;background-size: cover;background-position: center;flex-direction: column;}
-        #game-container {display: flex;flex-direction: row;align-items: center;padding: 1.25rem;max-width: 100%;box-sizing: border-box;}
+        #game-container {display: flex;flex-direction: row;align-items: flex-start;padding: 1.25rem;max-width: 100%;box-sizing: border-box;}
         #board-container {display: flex;flex-direction: column;align-items: center;margin-bottom: 0.75rem;width: 100%;max-width: 600px;margin-right: 2rem;}
         .row {display: flex;justify-content: center;margin-bottom: 0.25rem;width: 100%;}
         .hex-cell {width: 56px;height: 64px;display: flex;justify-content: center;align-items: center;margin: 0 0.25rem;border-radius: 0.5rem;font-size: 0.75rem;position: relative;animation: new-ally-fade-in 0.3s ease-out forwards;}
         .hex-inner {width: 100%;height: 100%;background-color: #4b5563;border-radius: 0.5rem;display: flex;justify-content: center;align-items: center;position: absolute;top: 0;left: 0;border: 2px solid;border-color: #6b7280;}
-        .hex-здоров {background-color: #86ef7d;}
-        .hex-ослаблен {background-color: #f43f5e;}
-        .enemy-здоров {color: #ffffff;}
-        .enemy-ослаблен {color: #ffffff;}
-        .slot-number {position: absolute;top: 0.15rem;left: 0.25rem;font-size: 0.5rem;color: #cbd5e0;z-index: 10;}
         #message-box {background-color: #17233c;color: #f9fafb;padding: 0.5rem;margin-bottom: 0.75rem;border-radius: 0.5rem;text-align: center;width: 100%;max-width: 600px;border: 2px solid;border-color: #6b7280;}
         .message-box-clear { background-color: #ffe35a !important; color: #062b08 !important; border-color: #fbaf21 !important; }
         .message-box-gameover { background-color: #aa2ac0 !important; color: #f3ffae !important; border-color: #f398ff !important; }
@@ -23,8 +18,8 @@
         #card-description {background-color: #101520;color: #f9fafb;height: 4.0rem;padding: 0.5rem;margin-bottom: 2rem;border-radius: 0.5rem;text-align: center;width: 100%;max-width: 400px;border: 2px solid;border-color: #6b7280;white-space: pre-line;}
         #hand-container {display: flex;justify-content: center;margin-bottom: 0.95rem;width: 100%;max-width: 600px;}
         .card {width: 64px;height: 80px;display: flex;justify-content: center;align-items: center;margin: 0 0.5rem;cursor: pointer;border-radius: 0.5rem;box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0.2);transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;font-size: 1rem;background-color: #374151;color: #f9fafb;border: 2px solid;border-color: #4b5563;}
-        .card:hover {transform: scale(1.2);box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0.3);}
-        .card.selected {background-color: #6b7280;border-color: #f5f5f5;box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0.4);}
+        .card:hover {transform: scale(1.2);box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.3);}
+        .card.selected {background-color: #6b7280;border-color: #f5f5f5;box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.4);}
         .card.disabled {opacity: 0.5;cursor: not-allowed;}
         #top-right-ui {display: flex;flex-direction: row;align-items: center;justify-content: center;margin-bottom: 0.75rem;width: 100%;max-width: 400px;}
         #special-hand-container {display: flex;justify-content: center;align-items: center;margin-left: 0.5rem;margin-bottom: 0.75rem;}
@@ -42,8 +37,8 @@
         .disabled-overlay { opacity: 0.5; pointer-events: none; }
         
         .hidden { display: none; }
-        #modal-overlay { z-index: 40; }
-        #modal-content {
+        .modal-overlay { z-index: 40; }
+        .modal-content {
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
@@ -64,83 +59,49 @@
         }
 
         @keyframes attack-animation {
-            0% {
-                transform: translate(-50%, -50%) scale(0.5) rotate(160deg);
-                opacity: 0,5;
-            }
-            50% {
-                opacity: 0.9;
-            }
-            100% {
-                transform: translate(-50%, -50%) scale(1.2) rotate(-20deg);
-                opacity: 0;
-            }
+            0% { transform: translate(-50%, -50%) scale(0.5) rotate(160deg); opacity: 0.5; }
+            50% { opacity: 0.9; }
+            100% { transform: translate(-50%, -50%) scale(1.2) rotate(-20deg); opacity: 0; }
         }
         
-        /* ▼▼▼ ここからモバイル・縦画面用のスタイル（変更箇所） ▼▼▼ */
         @media (max-width: 768px) and (orientation: portrait) {
-            body {
-                justify-content: flex-start;
-                padding: 1rem 0;
-                margin-top: 10rem;
-            }
-            #game-container {
-                flex-direction: column;
-                width: 100%;
-                padding-top: 4rem;
-                padding: 0 1rem;
-            }
-            /* #top-right-ui を display:contents から除外して、それ自体を並び替えの対象にする */
-            #left-container, #right-container {
-                display: contents;
-            }
-            /* フル幅を指定する要素から #kill-count, #special-hand-container を除外 */
-            #board-container,
-            #message-box,
-            #hand-container,
-            #card-description,
-            #game-explanation {
-                width: 100%;
-                max-width: 100%;
-                margin: 0 0 1rem 0;
-            }
-            #card-description {
-                 height: auto;
-            }
-            
-            /* 新しい表示順序 */
+            body { justify-content: flex-start; padding: 1rem 0; margin-top: 10rem; }
+            #game-container { flex-direction: column; width: 100%; padding-top: 4rem; padding: 0 1rem; }
+            #left-container, #right-container { display: contents; }
+            #board-container, #message-box, #hand-container, #card-description, #game-explanation { width: 100%; max-width: 100%; margin: 0 0 1rem 0; }
+            #card-description { height: auto; }
             #message-box { order: 1; }
             #board-container { order: 2; }
             #hand-container { order: 3; }
-
-            /* #top-right-ui (情報ボックスとSPカードの親) を5番目に配置 */
-            #top-right-ui {
-                order: 4;
-                width: 100%;
-                max-width: 100%;
-                margin-bottom: 1rem;
-                justify-content: center; /* 中身を中央に配置 */
-            }
-
+            #top-right-ui { order: 4; width: 100%; max-width: 100%; margin-bottom: 1rem; justify-content: center; }
             #card-description { order: 5; }
-
-            #game-explanation {
-                order: 6; /* ルール説明を6番目に */
-                max-height: 6em;
-                overflow-y: auto;
-            }
-
-            .mt-4.flex.justify-center.items-center {
-                margin-top: 0;
-            }
+            #game-explanation { order: 6; max-height: 6em; overflow-y: auto; }
+            .mt-4.flex.justify-center.items-center { margin-top: 0; }
         }
-        /* ▲▲▲ ここまで変更 ▲▲▲ */
+
+        .main-footer { width: 100%; max-width: 600px; text-align: center; color: #374151; margin-top: 40px; }
+        .main-footer a { color: #d8971d; text-decoration: none; transition: color 0.2s ease-in-out; font-size: 0.9rem; }
+        .main-footer a:hover { color: #8a580c; text-decoration: underline; }
+        .footer-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 1.25rem; margin-bottom: 0.2rem; }
+        .footer-copyright { font-size: 0.8rem; color: #6b7280; }
+        
+        /* Ranking Modal Styles */
+        #ranking-modal-content { max-width: 800px; }
+        .ranking-list { min-height: 300px; }
+        .ranking-list ol { list-style-position: inside; padding-left: 0; }
+        .ranking-list li { display: flex; justify-content: space-between; padding: 0.25rem 0.5rem; border-radius: 0.25rem; }
+        .ranking-list li:nth-child(odd) { background-color: #374151; }
+        .ranking-list .rank-name { text-align: left; }
+        .ranking-list .rank-score { font-weight: bold; }
+        .my-best-score { border: 2px solid #fbbf24; }
     </style>
 </head>
 <body class="bg-gray-900 text-gray-50">
+    <!-- Game Container -->
     <div id="game-container" class="flex flex-row items-start">
         <div id="left-container">
             <div id="board-container" class="flex flex-col items-center mb-3">
+                <!-- Hex cells will be generated by JS, but keeping structure for reference -->
                 <div class="row">
                     <div class="hex-cell" data-slot-index="0"><span class="slot-number">1</span><div class="hex-inner"></div></div>
                     <div class="hex-cell" data-slot-index="1"><span class="slot-number">2</span><div class="hex-inner"></div></div>
@@ -182,33 +143,29 @@
                 </div>
             </div>
             <div id="hand-container" class="flex justify-center mb-3">
-                <div class="card" data-card-index="0"></div>
-                <div class="card" data-card-index="1"></div>
-                <div class="card" data-card-index="2"></div>
-                <div class="card" data-card-index="3"></div>
-                <div class="card" data-card-index="4"></div>
+                <!-- Cards will be generated by JS -->
             </div>
             <div id="card-description" class="mb-3 text-center"></div>
-            <div id="game-explanation" class="mb-3 text-left overflow-y-auto">
-            </div>
+            <div id="game-explanation" class="mb-3 text-left overflow-y-auto"></div>
         </div>
     </div>
 
+    <!-- UI Controls -->
     <div class="flex justify-center items-center">
-        <button id="reset-button" class="bg-red-900 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-full mr-5">リセット</button>
-        <button id="settings-button" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded">設定</button>
+        <button id="reset-button" class="bg-red-900 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-full mr-5">Reset</button>
+        <button id="settings-button" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded">Setting</button>
         <div class="ml-4 flex space-x-2">
             <div id="difficulty-indicator" class="w-4 h-4 rounded-full transition-colors" title="現在の難易度"></div>
             <div id="endless-mode-indicator" class="w-4 h-4 rounded-full transition-colors" title="エンドレスモード"></div>
         </div>
-        <div id="highscore-display" class="ml-4 text-lg text-yellow-400 font-bold"></div>
+        <div id="highscore-display" class="ml-4 text-lg text-yellow-400 font-bold cursor-pointer hover:text-yellow-300 transition-colors"></div>
     </div>
 
+    <!-- Settings Modal -->
     <div id="settings-modal" class="hidden">
-        <div id="modal-overlay" class="fixed inset-0 bg-black bg-opacity-50 cursor-pointer"></div>
-        <div id="modal-content" class="fixed bg-gray-800 p-6 rounded-lg shadow-xl border border-gray-600 text-center">
+        <div id="modal-overlay" class="fixed inset-0 bg-black bg-opacity-50 cursor-pointer modal-overlay"></div>
+        <div id="modal-content" class="fixed bg-gray-800 p-6 rounded-lg shadow-xl border border-gray-600 text-center modal-content">
             <h2 class="text-2xl font-bold mb-6">設定</h2>
-            
             <div class="mb-5">
                 <h3 class="text-lg mb-2">難易度</h3>
                 <div class="flex justify-center flex-wrap gap-2">
@@ -217,30 +174,112 @@
                     <button data-difficulty="hard" class="difficulty-button bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded w-28 transition-transform duration-200">hard</button>
                     <button data-difficulty="nightmare" class="difficulty-button bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded w-28 transition-transform duration-200">nightmare</button>
                     <button data-difficulty="impossible" class="difficulty-button bg-gray-200 hover:bg-gray-200 text-gray-900 font-bold py-2 px-4 rounded w-28 transition-transform duration-200">impossible</button>
-                    </div>
+                </div>
             </div>
-
             <div class="mb-8">
                 <h3 class="text-lg mb-2">エンドレスモード</h3>
                 <button id="endless-mode-button" class="bg-purple-700 hover:bg-purple-800 text-white font-bold py-2 px-4 rounded transition-colors">OFF</button>
             </div>
-
             <div class="flex justify-center space-x-4">
                 <button id="cancel-button" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">キャンセル</button>
                 <button id="confirm-button" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">決定</button>
             </div>
         </div>
     </div>
-    <script>
-// ゲーム設定
+
+    <!-- Ranking Modal -->
+    <div id="ranking-modal" class="hidden">
+        <div id="ranking-modal-overlay" class="fixed inset-0 bg-black bg-opacity-75 cursor-pointer modal-overlay"></div>
+        <div id="ranking-modal-content" class="fixed bg-gray-800 p-6 rounded-lg shadow-xl border border-gray-600 text-center modal-content">
+            <h2 class="text-2xl font-bold mb-4">ランキング</h2>
+            
+            <!-- Difficulty Selection for Ranking -->
+            <div class="mb-4">
+                <div class="flex justify-center flex-wrap gap-2">
+                    <button data-difficulty="easy" class="ranking-difficulty-button bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-28 transition-transform duration-200">easy</button>
+                    <button data-difficulty="normal" class="ranking-difficulty-button bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded w-28 transition-transform duration-200">normal</button>
+                    <button data-difficulty="hard" class="ranking-difficulty-button bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded w-28 transition-transform duration-200">hard</button>
+                    <button data-difficulty="nightmare" class="ranking-difficulty-button bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded w-28 transition-transform duration-200">nightmare</button>
+                    <button data-difficulty="impossible" class="ranking-difficulty-button bg-gray-200 hover:bg-gray-200 text-gray-900 font-bold py-2 px-4 rounded w-28 transition-transform duration-200">impossible</button>
+                </div>
+            </div>
+
+            <!-- Rankings Display -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <!-- Endless OFF -->
+                <div class="bg-gray-900 p-4 rounded-lg">
+                    <h3 class="text-xl font-semibold mb-2 text-yellow-400">Endless: OFF</h3>
+                    <div id="ranking-list-off" class="ranking-list text-left"></div>
+                </div>
+                <!-- Endless ON -->
+                <div class="bg-gray-900 p-4 rounded-lg">
+                    <h3 class="text-xl font-semibold mb-2 text-purple-400">Endless: ON</h3>
+                    <div id="ranking-list-on" class="ranking-list text-left"></div>
+                </div>
+            </div>
+
+            <!-- Personal Best & Registration -->
+            <div class="bg-gray-700 p-4 rounded-lg mb-4">
+                <h3 class="text-lg mb-2">My Best Score</h3>
+                <div id="my-best-score-off" class="text-yellow-300 text-lg font-bold mb-1">Endless OFF: 0</div>
+                <div id="my-best-score-on" class="text-purple-300 text-lg font-bold">Endless ON: 0</div>
+                <div class="mt-4 flex flex-col sm:flex-row justify-center items-center gap-2">
+                    <input type="text" id="username-input" placeholder="ユーザー名を入力" class="bg-gray-900 text-white px-3 py-2 rounded border border-gray-600 w-full sm:w-auto">
+                    <button id="register-score-button" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded w-full sm:w-auto">スコアを登録/更新</button>
+                </div>
+                 <p id="firebase-status" class="text-sm text-gray-400 mt-2 h-4"></p>
+            </div>
+
+            <button id="close-ranking-button" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">閉じる</button>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="main-footer">
+        <div class="footer-links">
+            <a href="https://example.com/portfolio" target="_blank" rel="noopener noreferrer">作品集</a>
+            <a href="https://x.com/your_x_handle" target="_blank" rel="noopener noreferrer">X</a>
+            <a href="https://example.com/privacy-policy" target="_blank" rel="noopener noreferrer">プライバシーポリシー</a>
+            <a href="https://example.com/contact" target="_blank" rel="noopener noreferrer">お問い合わせ</a>
+        </div>
+        <div class="footer-copyright">
+            ©︎2025 shiumai_4. All rights reserved.
+        </div>
+    </footer>
+
+    <script type="module">
+        // Import Firebase modules
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, runTransaction } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase Configuration
+        const firebaseConfig = (typeof __firebase_config !== 'undefined' && __firebase_config)
+            ? JSON.parse(__firebase_config)
+            : {
+                apiKey: "AIzaSyC-4ofIVVGDrXrD26FYC5YeEPHCU-homCg",
+                authDomain: "hexgridbattle.firebaseapp.com",
+                projectId: "hexgridbattle",
+                storageBucket: "hexgridbattle.appspot.com",
+                messagingSenderId: "391263923010",
+                appId: "1:391263923010:web:772dcec1f6a44ef30c76db",
+                measurementId: "G-VMLTWEVTPN"
+            };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        let currentUser = null;
+
+        // Game Settings
         const gameSettings = {
-            // ▼▼▼ 共通設定 ▼▼▼
             initialHandSize: 5,
             boardSize: 19,
             cardTypes: ['⚡️', '🗡️', '💥'],
             enemyTypes: ['🔥', '💧', '☀️', '🌱', '🪽', '👿'],
             enemyHpValues: {'🔥': 15,'💧': 8,'☀️': 15,'🌱': 20,'🪽': 40,'👿': 150},
-            // ▼▼▼ 変更箇所 ▼▼▼
             attackEffectImages: {
                 '⚡️': 'https://github.com/shiumai-4/hexgridbattle/blob/main/thunder.PNG?raw=true',
                 '🗡️': 'https://github.com/shiumai-4/hexgridbattle/blob/main/sword.PNG?raw=true',
@@ -249,20 +288,11 @@
                 '🦠': 'https://github.com/shiumai-4/hexgridbattle/blob/main/virus.PNG?raw=true',
                 '🌊': 'https://github.com/shiumai-4/hexgridbattle/blob/main/thunami.PNG?raw=true'
             },
-            // ▲▲▲ 変更箇所 ▲▲▲
             slotCoordinates: [
-                [0, 0], [1, 0], [2, 0],
-                [0.5, 1], [1.5, 1], [2.5, 1], [3.5, 1],
-                [0, 2], [1, 2], [2, 2], [3, 2], [4, 2],
-                [0.5, 3], [1.5, 3], [2.5, 3], [3.5, 3],
-                [1, 4], [2, 4], [3, 4]
+                [0, 0], [1, 0], [2, 0], [0.5, 1], [1.5, 1], [2.5, 1], [3.5, 1], [0, 2], [1, 2], [2, 2], [3, 2], [4, 2], [0.5, 3], [1.5, 3], [2.5, 3], [3.5, 3], [1, 4], [2, 4], [3, 4]
             ],
             adjacentSlots: [
-                [1, 3, 4], [0, 2, 4, 5], [1, 5, 6],
-                [3, 0, 4, 7, 8], [4, 0, 1, 3, 5, 8, 9], [5, 1, 2, 4, 6, 9, 10], [6, 2, 5, 10, 11],
-                [7, 3, 8, 12], [8, 3, 4, 7, 9, 12, 13], [9, 4, 5, 8, 10, 13, 14], [10, 5, 6, 9, 11, 14, 15], [11, 6, 10, 15],
-                [12, 7, 8, 13, 16], [13, 8, 9, 12, 14, 16, 17], [14, 9, 10, 13, 15, 17, 18], [15, 10, 11, 14, 18],
-                [16, 12, 13, 17], [17, 13, 14, 16, 18], [18, 14, 15, 17]
+                [1, 3, 4], [0, 2, 4, 5], [1, 5, 6], [3, 0, 4, 7, 8], [4, 0, 1, 3, 5, 8, 9], [5, 1, 2, 4, 6, 9, 10], [6, 2, 5, 10, 11], [7, 3, 8, 12], [8, 3, 4, 7, 9, 12, 13], [9, 4, 5, 8, 10, 13, 14], [10, 5, 6, 9, 11, 14, 15], [11, 6, 10, 15], [12, 7, 8, 13, 16], [13, 8, 9, 12, 14, 16, 17], [14, 9, 10, 13, 15, 17, 18], [15, 10, 11, 14, 18], [16, 12, 13, 17], [17, 13, 14, 16, 18], [18, 14, 15, 17]
             ],
             killsPerLevel: 5,
             levelUpThreshold: 50,
@@ -277,69 +307,20 @@
                 '🗡️': '🗡️：斬撃。敵の最大HPの1/5の追加ダメージ。',
                 '💥': '💥：爆発。周囲の敵の数に応じて追加ダメージ。'
             },
-            baseDamage: {
-                '⚡️': 10,
-                '🗡️': 15,
-                '💥': 10
-            },
+            baseDamage: {'⚡️': 10, '🗡️': 15, '💥': 10},
             specialCardTypes: ['💀', '🦠', '🌊'],
             specialCardDescriptions: {
                 '💀': '💀：呪縛。全ての同じ種類の敵にダメージ。',
                 '🦠': '🦠：感染。隣接する敵を同化させダメージ。',
-                '🌊': '🌊：津波。全ての敵にダメージ。'
+                '🌊': '�：津波。全ての敵にダメージ。'
             },
-            specialCardBaseDamage: {
-                '💀': 20,
-                '🦠': 2,
-                '🌊': 10
-            },
-
+            specialCardBaseDamage: {'💀': 20, '🦠': 2, '🌊': 10},
             difficultySettings: {
-                easy: {
-                    killTarget: 100,
-                    enemySpawnRatesInitial: [0.4, 0.6, 0, 0, 0, 0],
-                    midGameRatesCount: 35,
-                    enemySpawnRatesMidGame: [0.4, 0.5, 0, 0.1, 0, 0],
-                    finalGameRatesCount: 80,
-                    enemySpawnRatesFinalGame: [0.3, 0.5, 0, 0.2, 0, 0],
-                    bossThresholdInitial: 80,
-                },
-                normal: {
-                    killTarget: 150,
-                    enemySpawnRatesInitial: [0.4, 0.5, 0.1, 0, 0, 0],
-                    midGameRatesCount: 35,
-                    enemySpawnRatesMidGame: [0.35, 0.45, 0, 0.2, 0, 0],
-                    finalGameRatesCount: 100,
-                    enemySpawnRatesFinalGame: [0.25, 0.25, 0.25, 0.25, 0, 0],
-                    bossThresholdInitial: 50,
-                },
-                hard: {
-                    killTarget: 250,
-                    enemySpawnRatesInitial: [0.4, 0.5, 0.1, 0, 0, 0],
-                    midGameRatesCount: 35,
-                    enemySpawnRatesMidGame: [0.35, 0.45, 0, 0.2, 0, 0],
-                    finalGameRatesCount: 125,
-                    enemySpawnRatesFinalGame: [0.25, 0.25, 0.25, 0.25, 0, 0],
-                    bossThresholdInitial: 50,
-                },
-                nightmare: {
-                    killTarget: 200,
-                    enemySpawnRatesInitial: [0.4, 0.5, 0.1, 0, 0, 0],
-                    midGameRatesCount: 35,
-                    enemySpawnRatesMidGame: [0.25, 0.4, 0.1, 0.2, 0.05, 0],
-                    finalGameRatesCount: 125,
-                    enemySpawnRatesFinalGame: [0.25, 0.25, 0.2, 0.2, 0.1, 0],
-                    bossThresholdInitial: 50,
-                },
-                impossible: {
-                    killTarget: 250,
-                    enemySpawnRatesInitial: [0.3, 0.5, 0.1, 0, 0.1, 0],
-                    midGameRatesCount: 35,
-                    enemySpawnRatesMidGame: [0.3, 0.4, 0.1, 0.1, 0.1, 0],
-                    finalGameRatesCount: 125,
-                    enemySpawnRatesFinalGame: [0.2, 0.2, 0.2, 0.2, 0.2, 0],
-                    bossThresholdInitial: 50,
-                }
+                easy: { killTarget: 100, enemySpawnRatesInitial: [0.4, 0.6, 0, 0, 0, 0], midGameRatesCount: 35, enemySpawnRatesMidGame: [0.4, 0.5, 0, 0.1, 0, 0], finalGameRatesCount: 80, enemySpawnRatesFinalGame: [0.3, 0.5, 0, 0.2, 0, 0], bossThresholdInitial: 80 },
+                normal: { killTarget: 150, enemySpawnRatesInitial: [0.4, 0.5, 0.1, 0, 0, 0], midGameRatesCount: 35, enemySpawnRatesMidGame: [0.35, 0.45, 0, 0.2, 0, 0], finalGameRatesCount: 100, enemySpawnRatesFinalGame: [0.25, 0.25, 0.25, 0.25, 0, 0], bossThresholdInitial: 50 },
+                hard: { killTarget: 250, enemySpawnRatesInitial: [0.4, 0.5, 0.1, 0, 0, 0], midGameRatesCount: 35, enemySpawnRatesMidGame: [0.35, 0.45, 0, 0.2, 0, 0], finalGameRatesCount: 125, enemySpawnRatesFinalGame: [0.25, 0.25, 0.25, 0.25, 0, 0], bossThresholdInitial: 50 },
+                nightmare: { killTarget: 200, enemySpawnRatesInitial: [0.4, 0.5, 0.1, 0, 0, 0], midGameRatesCount: 35, enemySpawnRatesMidGame: [0.25, 0.4, 0.1, 0.2, 0.05, 0], finalGameRatesCount: 125, enemySpawnRatesFinalGame: [0.25, 0.25, 0.2, 0.2, 0.1, 0], bossThresholdInitial: 50 },
+                impossible: { killTarget: 250, enemySpawnRatesInitial: [0.3, 0.5, 0.1, 0, 0.1, 0], midGameRatesCount: 35, enemySpawnRatesMidGame: [0.3, 0.4, 0.1, 0.1, 0.1, 0], finalGameRatesCount: 125, enemySpawnRatesFinalGame: [0.2, 0.2, 0.2, 0.2, 0.2, 0], bossThresholdInitial: 50 }
             }
         };
 
@@ -348,8 +329,21 @@
         };
 
         const domElements = {
-            handContainer: document.getElementById('hand-container'), specialHandContainer: document.getElementById('special-hand-container'), boardContainer: document.getElementById('board-container'), messageBox: document.getElementById('message-box'), killCountDisplay: document.getElementById('kill-count'), cardDescription: document.getElementById('card-description'), gameExplanation: document.getElementById('game-explanation'), handSlots: null, boardSlots: null, specialHandSlots: null, difficultyIndicator: document.getElementById('difficulty-indicator'), endlessModeIndicator: document.getElementById('endless-mode-indicator'), highscoreDisplay: document.getElementById('highscore-display'),
+            handContainer: document.getElementById('hand-container'), specialHandContainer: document.getElementById('special-hand-container'), boardContainer: document.getElementById('board-container'), messageBox: document.getElementById('message-box'), killCountDisplay: document.getElementById('kill-count'), cardDescription: document.getElementById('card-description'), gameExplanation: document.getElementById('game-explanation'), difficultyIndicator: document.getElementById('difficulty-indicator'), endlessModeIndicator: document.getElementById('endless-mode-indicator'), highscoreDisplay: document.getElementById('highscore-display'),
+            rankingModal: document.getElementById('ranking-modal'),
+            rankingModalOverlay: document.getElementById('ranking-modal-overlay'),
+            closeRankingButton: document.getElementById('close-ranking-button'),
+            rankingListOn: document.getElementById('ranking-list-on'),
+            rankingListOff: document.getElementById('ranking-list-off'),
+            myBestScoreOn: document.getElementById('my-best-score-on'),
+            myBestScoreOff: document.getElementById('my-best-score-off'),
+            rankingDifficultyButtons: document.querySelectorAll('.ranking-difficulty-button'),
+            usernameInput: document.getElementById('username-input'),
+            registerScoreButton: document.getElementById('register-score-button'),
+            firebaseStatus: document.getElementById('firebase-status'),
         };
+        
+        let rankingModalDifficulty = 'normal';
 
         function applyDifficultySettings(difficulty) {
             const newSettings = gameSettings.difficultySettings[difficulty];
@@ -389,9 +383,10 @@
 ・手札がすべて無くなるとゲームオーバー。一手一手を大切に。`;
         }
         
-        function getHighScoreKey() { return `hex-grid-battle-highscore-${gameState.difficulty}-${gameState.isEndlessMode ? 'on' : 'off'}`; }
-        function saveHighScore(score) { const key = getHighScoreKey(); const currentHighScore = parseInt(localStorage.getItem(key) || '0'); if (score > currentHighScore) { localStorage.setItem(key, score); updateHighScoreUI(); } }
-        function loadHighScore() { const key = getHighScoreKey(); return parseInt(localStorage.getItem(key) || '0'); }
+        // Highscore functions (now only use Local Storage)
+        function getHighScoreKey(difficulty, isEndless) { return `hex-grid-battle-highscore-${difficulty}-${isEndless ? 'on' : 'off'}`; }
+        function saveHighScore(score) { const key = getHighScoreKey(gameState.difficulty, gameState.isEndlessMode); const currentHighScore = parseInt(localStorage.getItem(key) || '0'); if (score > currentHighScore) { localStorage.setItem(key, score); updateHighScoreUI(); } }
+        function loadHighScore() { const key = getHighScoreKey(gameState.difficulty, gameState.isEndlessMode); return parseInt(localStorage.getItem(key) || '0'); }
         function updateHighScoreUI() { const highScore = loadHighScore(); domElements.highscoreDisplay.textContent = `HighScore: ${highScore}`; }
 
         function updateStatusIndicators() {
@@ -407,42 +402,25 @@
             if (gameState.isEndlessMode) { domElements.endlessModeIndicator.classList.add('bg-purple-600'); } else { domElements.endlessModeIndicator.classList.add('bg-purple-300'); }
         }
 
-        // ▼▼▼ 変更箇所 ▼▼▼
         function showAttackEffect(slotIndex, cardType) {
             const imageUrl = gameSettings.attackEffectImages[cardType];
             if (!imageUrl) return;
-            
             const cellElement = document.querySelector(`.hex-cell[data-slot-index="${slotIndex}"]`);
             if (!cellElement) return;
-            
             const effectImage = document.createElement('img');
             effectImage.src = imageUrl;
             effectImage.className = 'attack-effect';
-            
             cellElement.appendChild(effectImage);
-            
-            setTimeout(() => {
-                if (cellElement.contains(effectImage)) {
-                    cellElement.removeChild(effectImage);
-                }
-            }, 400);
+            setTimeout(() => { if (cellElement.contains(effectImage)) { cellElement.removeChild(effectImage); } }, 400);
         }
 
         function preloadAttackImages() {
-            // gameSettingsからエフェクト画像のURLをすべて取得
             const imageUrls = Object.values(gameSettings.attackEffectImages);
-            
-            // 各URLに対してImageオブジェクトを作成し、読み込みを開始させる
-            imageUrls.forEach(url => {
-                const img = new Image();
-                img.src = url;
-            });
+            imageUrls.forEach(url => { const img = new Image(); img.src = url; });
         }
-        // ▲▲▲ 変更箇所 ▲▲▲
 
         function initializeGame() {
             preloadAttackImages();
-            
             applyDifficultySettings(gameState.difficulty);
             if (gameState.isEndlessMode) { gameSettings.killTarget = Infinity; }
             Object.assign(gameState, { hand: [], board: [], selectedCardIndex: null, selectedSpecialCardIndex: null, killCount: 0, gameOver: false, handSelectionEnabled: true, playerLevel: 1, playerXp: 0, playerXpTotal: 0, expForNextLevel: 0, expAdded: 0, specialCardChargeCounter: 0, specialCardChargeAdd: 400, emptySlotsPreviousTurn: [], emptySlotsCurrentTurn: [], specialHand: [null, null], enemySpawnRates: [...gameSettings.enemySpawnRatesInitial], forcePurpleEnemyCount: gameSettings.bossThresholdInitial, forcePurpleEnemyThreshold: gameSettings.bossThresholdIncrement, isMidGameRatesActive: false, isFinalGameRatesActive: false, forcePurpleEnemy: false, bossExtraHpTimes: 0 });
@@ -518,15 +496,9 @@
                     const enemy = gameState.board[slotIndex].enemy;
                     cellInner.textContent = enemy.type;
                     cellInner.innerHTML += `<div class="hp-bar"><div class="hp-fill" style="width: ${(enemy.hp / enemy.maxHp) * 100}%; background-color: ${enemy.hp <= enemy.maxHp / 2 ? 'red' : enemy.hp <= enemy.maxHp * 0.75 ? 'yellow' : 'green'};"></div><span class="hp-text">${enemy.hp}</span></div>`;
-                    switch (enemy.type) {
-                        case '🔥': cellInner.classList.add('bg-red-500'); break;
-                        case '💧': cellInner.classList.add('bg-blue-500'); break;
-                        case '☀️': cellInner.classList.add('bg-yellow-500'); break;
-                        case '🌱': cellInner.classList.add('bg-green-500'); break;
-                        case '🪽': cellInner.classList.add('bg-gray-700'); break;
-                        case '👿': cellInner.classList.add('bg-purple-500'); break;
-                    }
-                } else { cellInner.classList.add('bg-gray-400'); cellInner.textContent = 'Empty'; }
+                    const colorClass = { '🔥': 'bg-red-500', '💧': 'bg-blue-500', '☀️': 'bg-yellow-500', '🌱': 'bg-green-500', '🪽': 'bg-gray-700', '👿': 'bg-purple-500' }[enemy.type];
+                    if (colorClass) cellInner.classList.add(colorClass);
+                } else { cellInner.classList.add('bg-gray-400'); cellInner.textContent = ''; }
             });
         }
 
@@ -561,7 +533,6 @@
             updateHandUI(); updateSpecialHandUI(); updateCardDescriptionUI(); updateMessageBoxUI('攻撃するマスを選択してください');
         }
 
-        // ▼▼▼ 変更箇所 ▼▼▼
         function attack(slotIndex) {
             if (gameState.gameOver) return;
             let cardType = null, baseDamage = 0, selectedIndex = null;
@@ -652,15 +623,13 @@
                     break;
                 }
             }
-            // ▲▲▲ 変更箇所 ▲▲▲
 
             updateMessageBoxUI('攻撃！');
             if (selectedIndex !== null) {
                 if (gameState.selectedCardIndex !== null) { gameState.hand.splice(gameState.selectedCardIndex, 1); } else if (gameState.selectedSpecialCardIndex !== null) { gameState.specialHand[gameState.selectedSpecialCardIndex] = null; }
             }
             gameState.selectedCardIndex = null; gameState.selectedSpecialCardIndex = null; gameState.handSelectionEnabled = false;
-            domElements.handSlots.forEach(card => { if (!card.classList.contains('opacity-30')) { card.classList.add('disabled'); } });
-            domElements.specialHandSlots.forEach(card => { if (!card.classList.contains('opacity-30')) { card.classList.add('disabled'); } });
+            
             gameState.killCount += enemiesKilled;
             updateHandUI(); updateSpecialHandUI(); updateBoardUI(); handleExperience(enemiesKilled); updateKillCountUI();
 
@@ -671,12 +640,10 @@
                 const isBoardCompletelyEmpty = gameState.board.every(cell => !cell || cell.empty);
                 if (isBoardCompletelyEmpty) { gameState.emptySlotsPreviousTurn = Array.from({ length: gameSettings.boardSize }, (_, i) => i); replenishEnemies(); gameState.emptySlotsCurrentTurn = []; } else { replenishEnemies(); gameState.emptySlotsPreviousTurn = [...gameState.emptySlotsCurrentTurn]; gameState.emptySlotsCurrentTurn = []; }
                 gameState.handSelectionEnabled = true;
-                domElements.handSlots.forEach(card => { card.classList.remove('disabled'); });
-                domElements.specialHandSlots.forEach(card => { card.classList.remove('disabled'); });
+                
                 updateHandUI(); updateSpecialHandUI(); updateBoardUI(); updateMessageBoxUI('手札を選択してください');
-                if (gameState.killCount >= gameSettings.killTarget) { gameState.gameOver = true; endGame(); } else if (gameState.hand.length === 0 && gameState.specialHand.every(card => card === null) && gameState.board.some(cell => cell && !cell.empty)) { gameState.gameOver = true; endGame(); return; }
+                if (!gameState.isEndlessMode && gameState.killCount >= gameSettings.killTarget) { gameState.gameOver = true; endGame(); } else if (gameState.hand.length === 0 && gameState.specialHand.every(card => card === null) && gameState.board.some(cell => cell && !cell.empty)) { gameState.gameOver = true; endGame(); return; }
             }, 400);
-            gameState.handSelectionEnabled = true;
         }
 
         function handleBossSpawn() { if (gameState.killCount >= gameState.forcePurpleEnemyCount) { gameState.forcePurpleEnemy = true; gameState.forcePurpleEnemyCount += gameState.forcePurpleEnemyThreshold; } }
@@ -704,7 +671,7 @@
             const specialCardCount = gameState.specialHand.filter(card => card !== null).length;
             const score = gameState.playerXpTotal + (normalCardCount * 30) + (specialCardCount * 100);
             saveHighScore(score);
-            const isClear = gameState.killCount >= gameSettings.killTarget;
+            const isClear = !gameState.isEndlessMode && gameState.killCount >= gameSettings.killTarget;
             if (isClear) { updateMessageBoxUI(`ゲームクリア！ Score: ${score}`); domElements.messageBox.classList.add('message-box-clear'); } else { updateMessageBoxUI(`ゲームオーバー Score: ${score}`); domElements.messageBox.classList.add('message-box-gameover'); }
         }
         
@@ -718,21 +685,198 @@
 
         document.getElementById('reset-button').addEventListener('click', resetGame);
         
-        const settingsModal = document.getElementById('settings-modal'), openSettingsButton = document.getElementById('settings-button'), cancelButton = document.getElementById('cancel-button'), confirmButton = document.getElementById('confirm-button'), modalOverlay = document.getElementById('modal-overlay'), difficultyButtons = document.querySelectorAll('.difficulty-button'), endlessModeButton = document.getElementById('endless-mode-button');
+        // Settings Modal Logic
+        const settingsModal = document.getElementById('settings-modal'), openSettingsButton = document.getElementById('settings-button'), cancelButton = document.getElementById('cancel-button'), confirmButton = document.getElementById('confirm-button'), modalOverlay = document.querySelector('#settings-modal .modal-overlay'), difficultyButtons = document.querySelectorAll('.difficulty-button'), endlessModeButton = document.getElementById('endless-mode-button');
         let tempDifficulty, tempIsEndlessMode;
-        function updateDifficultyButtonsUI() { difficultyButtons.forEach(button => { if (button.dataset.difficulty === tempDifficulty) { button.classList.add('scale-110'); button.classList.remove('scale-90', 'opacity-75'); } else { button.classList.add('scale-90', 'opacity-75'); button.classList.remove('scale-110'); } }); }
+        function updateDifficultyButtonsUI() { difficultyButtons.forEach(button => { button.classList.toggle('scale-110', button.dataset.difficulty === tempDifficulty); button.classList.toggle('opacity-75', button.dataset.difficulty !== tempDifficulty); }); }
         function updateEndlessModeButtonUI() { if (tempIsEndlessMode) { endlessModeButton.textContent = 'ON'; endlessModeButton.classList.replace('bg-purple-400', 'bg-purple-700'); } else { endlessModeButton.textContent = 'OFF'; endlessModeButton.classList.replace('bg-purple-700', 'bg-purple-400'); } }
-        function openModal() { tempDifficulty = gameState.difficulty; tempIsEndlessMode = gameState.isEndlessMode; updateDifficultyButtonsUI(); updateEndlessModeButtonUI(); settingsModal.classList.remove('hidden'); }
-        function closeModal() { settingsModal.classList.add('hidden'); }
+        function openSettingsModal() { tempDifficulty = gameState.difficulty; tempIsEndlessMode = gameState.isEndlessMode; updateDifficultyButtonsUI(); updateEndlessModeButtonUI(); settingsModal.classList.remove('hidden'); }
+        function closeSettingsModal() { settingsModal.classList.add('hidden'); }
         difficultyButtons.forEach(button => { button.addEventListener('click', () => { tempDifficulty = button.dataset.difficulty; updateDifficultyButtonsUI(); }); });
         endlessModeButton.addEventListener('click', () => { tempIsEndlessMode = !tempIsEndlessMode; updateEndlessModeButtonUI(); });
-        openSettingsButton.addEventListener('click', openModal);
-        cancelButton.addEventListener('click', closeModal);
-        modalOverlay.addEventListener('click', closeModal);
-        confirmButton.addEventListener('click', () => { const difficultyChanged = gameState.difficulty !== tempDifficulty; const endlessModeChanged = gameState.isEndlessMode !== tempIsEndlessMode; if (difficultyChanged || endlessModeChanged) { gameState.difficulty = tempDifficulty; gameState.isEndlessMode = tempIsEndlessMode; resetGame(); } closeModal(); });
+        openSettingsButton.addEventListener('click', openSettingsModal);
+        cancelButton.addEventListener('click', closeSettingsModal);
+        modalOverlay.addEventListener('click', closeSettingsModal);
+        confirmButton.addEventListener('click', () => { const difficultyChanged = gameState.difficulty !== tempDifficulty; const endlessModeChanged = gameState.isEndlessMode !== tempIsEndlessMode; if (difficultyChanged || endlessModeChanged) { gameState.difficulty = tempDifficulty; gameState.isEndlessMode = tempIsEndlessMode; resetGame(); } closeSettingsModal(); });
         
-        initializeGame();
+        // Ranking Modal Logic
+        function openRankingModal() {
+            rankingModalDifficulty = gameState.difficulty;
+            updateRankingDifficultyButtonsUI();
+            fetchAndDisplayRankings();
+            domElements.rankingModal.classList.remove('hidden');
+        }
+
+        function closeRankingModal() {
+            domElements.rankingModal.classList.add('hidden');
+        }
+
+        function updateRankingDifficultyButtonsUI() {
+            domElements.rankingDifficultyButtons.forEach(button => {
+                button.classList.toggle('scale-110', button.dataset.difficulty === rankingModalDifficulty);
+                button.classList.toggle('opacity-75', button.dataset.difficulty !== rankingModalDifficulty);
+            });
+        }
         
+        async function fetchAndDisplayRankings() {
+            // Display personal bests from local storage
+            const myBestOn = localStorage.getItem(getHighScoreKey(rankingModalDifficulty, true)) || 0;
+            const myBestOff = localStorage.getItem(getHighScoreKey(rankingModalDifficulty, false)) || 0;
+            domElements.myBestScoreOn.textContent = `Endless ON: ${myBestOn}`;
+            domElements.myBestScoreOff.textContent = `Endless OFF: ${myBestOff}`;
+
+            // Fetch from Firebase
+            const rankOnId = `${rankingModalDifficulty}-on`;
+            const rankOffId = `${rankingModalDifficulty}-off`;
+            
+            const rankOnDoc = await getDoc(doc(db, `artifacts/${appId}/public/data/rankings`, rankOnId));
+            const rankOffDoc = await getDoc(doc(db, `artifacts/${appId}/public/data/rankings`, rankOffId));
+
+            const rankingsOn = rankOnDoc.exists() ? rankOnDoc.data().scores : [];
+            const rankingsOff = rankOffDoc.exists() ? rankOffDoc.data().scores : [];
+            
+            displayRankingList(domElements.rankingListOn, rankingsOn, myBestOn);
+            displayRankingList(domElements.rankingListOff, rankingsOff, myBestOff);
+        }
+
+        function displayRankingList(element, rankings, myBest) {
+            element.innerHTML = '';
+            if (rankings.length === 0) {
+                element.innerHTML = '<p class="text-gray-400">まだランキングデータがありません。</p>';
+                return;
+            }
+            const ol = document.createElement('ol');
+            rankings.forEach((entry, index) => {
+                const li = document.createElement('li');
+                li.innerHTML = `<span class="rank-name">${index + 1}. ${entry.username}</span> <span class="rank-score">${entry.score}</span>`;
+                if (currentUser && entry.userId === currentUser.uid && entry.score == myBest) {
+                    li.classList.add('my-best-score');
+                }
+                ol.appendChild(li);
+            });
+            element.appendChild(ol);
+        }
+
+        async function registerScore() {
+            if (!currentUser) {
+                domElements.firebaseStatus.textContent = '認証が完了していません。';
+                return;
+            }
+            const username = domElements.usernameInput.value.trim();
+            if (!username) {
+                domElements.firebaseStatus.textContent = 'ユーザー名を入力してください。';
+                return;
+            }
+            
+            domElements.firebaseStatus.textContent = 'スコアを登録中...';
+            
+            const userScores = {};
+            const difficulties = Object.keys(gameSettings.difficultySettings);
+            const modes = [true, false]; // true for on, false for off
+
+            for (const diff of difficulties) {
+                for (const mode of modes) {
+                    const key = getHighScoreKey(diff, mode);
+                    const score = parseInt(localStorage.getItem(key) || '0');
+                    if (score > 0) {
+                        userScores[key] = score;
+                    }
+                }
+            }
+            
+            try {
+                // 1. Update user's personal document
+                const userDocRef = doc(db, `artifacts/${appId}/users/${currentUser.uid}/userScores`, "data");
+                await setDoc(userDocRef, { username, scores: userScores }, { merge: true });
+
+                // 2. Update global ranking boards for each score
+                for (const key in userScores) {
+                    const score = userScores[key];
+                    const rankId = key.replace('hex-grid-battle-highscore-', '');
+                    const rankDocRef = doc(db, `artifacts/${appId}/public/data/rankings`, rankId);
+                    
+                    await runTransaction(db, async (transaction) => {
+                        const rankDoc = await transaction.get(rankDocRef);
+                        let scores = rankDoc.exists() ? rankDoc.data().scores : [];
+
+                        // Remove old score from the same user
+                        scores = scores.filter(s => s.userId !== currentUser.uid);
+
+                        // Add new score
+                        scores.push({ userId: currentUser.uid, username, score });
+
+                        // Sort and trim
+                        scores.sort((a, b) => b.score - a.score);
+                        if (scores.length > 10) {
+                            scores = scores.slice(0, 10);
+                        }
+
+                        transaction.set(rankDocRef, { scores });
+                    });
+                }
+                
+                domElements.firebaseStatus.textContent = '登録が完了しました！';
+                fetchAndDisplayRankings(); // Refresh the view
+            } catch (error) {
+                console.error("Error writing document: ", error);
+                domElements.firebaseStatus.textContent = '登録に失敗しました。';
+            } finally {
+                setTimeout(() => { domElements.firebaseStatus.textContent = ''; }, 3000);
+            }
+        }
+        
+        async function loadUsernameFromFirebase() {
+            if (!currentUser) return;
+            const userDocRef = doc(db, `artifacts/${appId}/users/${currentUser.uid}/userScores`, "data");
+            const userDoc = await getDoc(userDocRef);
+            if (userDoc.exists() && userDoc.data().username) {
+                domElements.usernameInput.value = userDoc.data().username;
+            }
+        }
+
+        // Event Listeners for Ranking Modal
+        domElements.highscoreDisplay.addEventListener('click', openRankingModal);
+        domElements.rankingModalOverlay.addEventListener('click', closeRankingModal);
+        domElements.closeRankingButton.addEventListener('click', closeRankingModal);
+        domElements.rankingDifficultyButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                rankingModalDifficulty = button.dataset.difficulty;
+                updateRankingDifficultyButtonsUI();
+                fetchAndDisplayRankings();
+            });
+        });
+        domElements.registerScoreButton.addEventListener('click', registerScore);
+
+        // Firebase Authentication and App Start
+        async function initializeAuthentication() {
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    currentUser = user;
+                    console.log("Authentication successful, UID:", currentUser.uid);
+                    loadUsernameFromFirebase();
+                } else {
+                    currentUser = null;
+                    console.log("User is not authenticated.");
+                }
+            });
+
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Firebase sign-in failed:", error);
+            }
+        }
+
+        async function startApp() {
+            await initializeAuthentication();
+            initializeGame();
+        }
+
+        startApp();
     </script>
 </body>
 </html>
