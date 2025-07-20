@@ -250,27 +250,25 @@
     <script type="module">
         // Import Firebase modules
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, runTransaction } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Firebase Configuration
-        const firebaseConfig = (typeof __firebase_config !== 'undefined' && __firebase_config)
-            ? JSON.parse(__firebase_config)
-            : {
-                apiKey: "AIzaSyC-4ofIVVGDrXrD26FYC5YeEPHCU-homCg",
-                authDomain: "hexgridbattle.firebaseapp.com",
-                projectId: "hexgridbattle",
-                storageBucket: "hexgridbattle.appspot.com",
-                messagingSenderId: "391263923010",
-                appId: "1:391263923010:web:772dcec1f6a44ef30c76db",
-                measurementId: "G-VMLTWEVTPN"
-            };
+        // IMPORTANT: This configuration is for the user's personal Firebase project.
+        const firebaseConfig = {
+            apiKey: "AIzaSyC-4ofIVVGDrXrD26FYC5YeEPHCU-homCg",
+            authDomain: "hexgridbattle.firebaseapp.com",
+            projectId: "hexgridbattle",
+            storageBucket: "hexgridbattle.appspot.com",
+            messagingSenderId: "391263923010",
+            appId: "1:391263923010:web:772dcec1f6a44ef30c76db",
+            measurementId: "G-VMLTWEVTPN"
+        };
 
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         let currentUser = null;
 
         // Game Settings
@@ -312,7 +310,7 @@
             specialCardDescriptions: {
                 '💀': '💀：呪縛。全ての同じ種類の敵にダメージ。',
                 '🦠': '🦠：感染。隣接する敵を同化させダメージ。',
-                '🌊': '�：津波。全ての敵にダメージ。'
+                '🌊': '🌊：津波。全ての敵にダメージ。'
             },
             specialCardBaseDamage: {'💀': 20, '🦠': 2, '🌊': 10},
             difficultySettings: {
@@ -719,6 +717,10 @@
         }
         
         async function fetchAndDisplayRankings() {
+            if (!currentUser) {
+                console.log("Cannot fetch rankings, user not authenticated.");
+                return;
+            }
             // Display personal bests from local storage
             const myBestOn = localStorage.getItem(getHighScoreKey(rankingModalDifficulty, true)) || 0;
             const myBestOff = localStorage.getItem(getHighScoreKey(rankingModalDifficulty, false)) || 0;
@@ -729,8 +731,8 @@
             const rankOnId = `${rankingModalDifficulty}-on`;
             const rankOffId = `${rankingModalDifficulty}-off`;
             
-            const rankOnDoc = await getDoc(doc(db, `artifacts/${appId}/public/data/rankings`, rankOnId));
-            const rankOffDoc = await getDoc(doc(db, `artifacts/${appId}/public/data/rankings`, rankOffId));
+            const rankOnDoc = await getDoc(doc(db, "rankings", rankOnId));
+            const rankOffDoc = await getDoc(doc(db, "rankings", rankOffId));
 
             const rankingsOn = rankOnDoc.exists() ? rankOnDoc.data().scores : [];
             const rankingsOff = rankOffDoc.exists() ? rankOffDoc.data().scores : [];
@@ -786,14 +788,14 @@
             
             try {
                 // 1. Update user's personal document
-                const userDocRef = doc(db, `artifacts/${appId}/users/${currentUser.uid}/userScores`, "data");
+                const userDocRef = doc(db, "userScores", currentUser.uid);
                 await setDoc(userDocRef, { username, scores: userScores }, { merge: true });
 
                 // 2. Update global ranking boards for each score
                 for (const key in userScores) {
                     const score = userScores[key];
                     const rankId = key.replace('hex-grid-battle-highscore-', '');
-                    const rankDocRef = doc(db, `artifacts/${appId}/public/data/rankings`, rankId);
+                    const rankDocRef = doc(db, "rankings", rankId);
                     
                     await runTransaction(db, async (transaction) => {
                         const rankDoc = await transaction.get(rankDocRef);
@@ -827,7 +829,7 @@
         
         async function loadUsernameFromFirebase() {
             if (!currentUser) return;
-            const userDocRef = doc(db, `artifacts/${appId}/users/${currentUser.uid}/userScores`, "data");
+            const userDocRef = doc(db, "userScores", currentUser.uid);
             const userDoc = await getDoc(userDocRef);
             if (userDoc.exists() && userDoc.data().username) {
                 domElements.usernameInput.value = userDoc.data().username;
@@ -848,32 +850,35 @@
         domElements.registerScoreButton.addEventListener('click', registerScore);
 
         // Firebase Authentication and App Start
-        async function initializeAuthentication() {
+        function startApp() {
+            let gameInitialized = false;
+
             onAuthStateChanged(auth, (user) => {
                 if (user) {
+                    // User is signed in.
                     currentUser = user;
                     console.log("Authentication successful, UID:", currentUser.uid);
                     loadUsernameFromFirebase();
+
+                    // Initialize the game only once after the first successful auth state is confirmed.
+                    if (!gameInitialized) {
+                        initializeGame();
+                        gameInitialized = true;
+                    }
                 } else {
+                    // User is signed out. Attempt to sign in anonymously.
                     currentUser = null;
-                    console.log("User is not authenticated.");
+                    console.log("User is not authenticated, attempting to sign in anonymously.");
+                    signInAnonymously(auth).catch((error) => {
+                        console.error("Anonymous sign-in failed:", error);
+                        // Initialize game even on auth failure, but ranking will be disabled.
+                        if (!gameInitialized) {
+                            initializeGame();
+                            gameInitialized = true;
+                        }
+                    });
                 }
             });
-
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (error) {
-                console.error("Firebase sign-in failed:", error);
-            }
-        }
-
-        async function startApp() {
-            await initializeAuthentication();
-            initializeGame();
         }
 
         startApp();
