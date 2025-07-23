@@ -579,7 +579,7 @@
                     const targetEnemyType = attackedSlot.enemy.type;
                     gameState.board.forEach((cell, index) => {
                         if (cell && !cell.empty && cell.enemy.type === targetEnemyType) {
-                            cell.enemy.hp -= baseDamage;
+                            cell.enemy.hp -= baseDamage + Math.floor(gameState.playerLevel * 0.5);;
                             showAttackEffect(index, cardType);
                             if (cell.enemy.hp <= 0) { cell.empty = true; enemiesKilled++; handleBossSpawn(); }
                         }
